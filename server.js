@@ -1,0 +1,38 @@
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+require("./bookingReminderCron"); // your cron job for reminders
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// ================= ROUTES =================
+app.use("/api/routes", require("./routes/routes"));
+app.use("/api/booking", require("./routes/booking")); // booking actions
+app.use("/api/bookings", require("./routes/booking")); // admin view
+app.use("/api/contact", require("./routes/contact"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/payment", require("./routes/payment"));
+
+// ================= ADMIN LOGIN =================
+app.post("/api/admin/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (
+    username === process.env.ADMIN_USER &&
+    password === process.env.ADMIN_PASS
+  ) {
+    return res.json({ success: true });
+  }
+
+  res.status(401).json({ success: false });
+});
+
+
+// ================= SERVER =================
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
