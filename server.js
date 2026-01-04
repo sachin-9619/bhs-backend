@@ -17,7 +17,9 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10
 });
-
+// ---------- ADMIN ROUTES ----------
+const adminRoutes = require("./routes/admin");
+app.use("/api/admin", adminRoutes);
 // ---------- TEST ROUTE ----------
 app.get("/ping", (req, res) => {
   res.send("Backend alive 🚀");
@@ -44,6 +46,3 @@ const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port", PORT);
 });
-// ---------- ADMIN ROUTES ----------
-const adminRoutes = require("./routes/admin");
-app.use("/api/admin", adminRoutes);
