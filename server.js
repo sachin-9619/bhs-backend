@@ -1,13 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+require("./bookingReminderCron"); // your cron job for reminders
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// ================= SAFE CRON =================
-setTimeout(() => require("./bookingReminderCron"), 3000); // ✅ safe deploy
 
 // ================= ROUTES =================
 app.use("/api/routes", require("./routes/routes"));
@@ -30,6 +28,7 @@ app.post("/api/admin/login", (req, res) => {
 
   res.status(401).json({ success: false });
 });
+
 
 // ================= SERVER =================
 const PORT = process.env.PORT || 5000;
