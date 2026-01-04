@@ -12,7 +12,6 @@ app.use("/api/booking", require("./routes/booking"));
 app.use("/api/bookings", require("./routes/booking"));
 app.use("/api/contact", require("./routes/contact"));
 app.use("/api/admin", require("./routes/admin"));
-app.use("/api/payment", require("./routes/payment"));
 
 // ================= ADMIN LOGIN =================
 app.post("/api/admin/login", (req, res) => {
