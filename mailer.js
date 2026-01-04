@@ -16,12 +16,12 @@ const transporter = nodemailer.createTransport({
  * ❌ DO NOT verify() on Railway / production
  * Gmail SMTP timeout causes app issues
  */
-// if (process.env.NODE_ENV !== "production") {
-//   transporter.verify((err) => {
-//     if (err) console.error("Mail verify error:", err);
-//     else console.log("Mail server ready");
-//   });
-// }
+if (process.env.NODE_ENV !== "production") {
+  transporter.verify((err) => {
+     if (err) console.error("Mail verify error:", err);
+     else console.log("Mail server ready");
+   });
+ }
 
 exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   let subject = "";
