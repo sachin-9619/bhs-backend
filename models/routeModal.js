@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaTimes } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://bhs-backend-production.up.railway.app/api";
 
 export default function RouteModal({ route, onClose, onSave }) {
   const [busName, setBusName] = useState("");
