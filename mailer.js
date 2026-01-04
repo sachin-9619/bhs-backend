@@ -1,15 +1,22 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // TLS
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    user: process.env.MAIL_USER, // example@gmail.com
+    pass: process.env.MAIL_PASS, // Gmail App Password
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
 });
 
-// 🔥 VERY IMPORTANT (debug)
-transporter.verify((err, success) => {
+// ✅ Verify transporter (Railway logs me dikhega)
+transporter.verify((err) => {
   if (err) {
     console.error("❌ Mail server error:", err);
   } else {
@@ -18,40 +25,41 @@ transporter.verify((err, success) => {
 });
 
 exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
+  let subject = "";
+  let html = "";
+
+  if (type === "CONFIRMATION") {
+    subject = "🎫 Bus Ticket Confirmation - BHS Travels";
+    html = `
+      <h2>Booking Confirmed 🎉</h2>
+      <p><b>Name:</b> ${data.userName}</p>
+      <p><b>Bus:</b> ${data.busName}</p>
+      <p><b>From:</b> ${data.departure}</p>
+      <p><b>To:</b> ${data.destination}</p>
+      <p><b>Seats:</b> ${data.seats}</p>
+      <p><b>Amount:</b> ₹${data.amount}</p>
+      <p><b>Departure Time:</b> ${data.departureTime}</p>
+      <br/>
+      <p>Thank you for booking with <b>BHS Travels</b> 🙏</p>
+    `;
+  }
+
+  if (type === "ADMIN_NOTIFICATION") {
+    subject = "🆕 New Booking Received - BHS";
+    html = `
+      <h2>New Booking Alert</h2>
+      <p><b>Customer:</b> ${data.userName}</p>
+      <p><b>Email:</b> ${data.email}</p>
+      <p><b>Phone:</b> ${data.phone}</p>
+      <p><b>Bus:</b> ${data.busName}</p>
+      <p><b>Route:</b> ${data.departure} → ${data.destination}</p>
+      <p><b>Seats:</b> ${data.seats}</p>
+      <p><b>Amount:</b> ₹${data.amount}</p>
+      <p><b>Departure:</b> ${data.departureTime}</p>
+    `;
+  }
+
   try {
-    let subject = "";
-    let html = "";
-
-    if (type === "CONFIRMATION") {
-      subject = "🎫 Bus Ticket Confirmation";
-      html = `
-        <h2>Booking Confirmed 🎉</h2>
-        <p><b>Name:</b> ${data.userName}</p>
-        <p><b>Bus:</b> ${data.busName}</p>
-        <p><b>From:</b> ${data.departure}</p>
-        <p><b>To:</b> ${data.destination}</p>
-        <p><b>Seats:</b> ${data.seats}</p>
-        <p><b>Amount:</b> ₹${data.amount}</p>
-        <p><b>Departure Time:</b> ${data.departureTime}</p>
-        <br/>
-        <p>Thank you for booking with BHS Travels 🙏</p>
-      `;
-    } else if (type === "ADMIN_NOTIFICATION") {
-  subject = "🆕 New Booking Received";
-  html = `
-    <h2>New Booking</h2>
-    <p><b>Customer:</b> ${data.userName}</p>
-    <p><b>Email:</b> ${data.email}</p>
-    <p><b>Phone:</b> ${data.phone}</p>
-    <p><b>Bus:</b> ${data.busName}</p>
-    <p><b>From:</b> ${data.departure}</p>
-    <p><b>To:</b> ${data.destination}</p>
-    <p><b>Seats:</b> ${data.seats}</p>
-    <p><b>Amount:</b> ₹${data.amount}</p>
-    <p><b>Departure:</b> ${data.departureTime}</p>
-  `;
-}
-
     await transporter.sendMail({
       from: `"BHS Travels" <${process.env.MAIL_USER}>`,
       to,
@@ -59,9 +67,9 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
       html,
     });
 
-    console.log(`✅ Mail sent to: ${to} (${type})`);
+    console.log(`✅ Mail sent → ${to} [${type}]`);
   } catch (err) {
-    console.error("❌ Mail sending failed:", err);
-    throw err; // Important: so caller knows mail failed
+    console.error("❌ Mail sending failed:", err.message);
+    throw err;
   }
 };

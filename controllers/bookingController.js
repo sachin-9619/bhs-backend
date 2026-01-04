@@ -14,7 +14,7 @@ exports.getBookedSeats = async (req, res) => {
 
     res.json(rows.map(r => Number(r.seat_number)));
   } catch (err) {
-    console.error("❌ getBookedSeats error:", err);
+    console.error("❌ getBookedSeats:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -29,7 +29,7 @@ exports.bookSeats = async (req, res) => {
       return res.status(400).json({ message: "Invalid booking data" });
     }
 
-    /* ---------- CHECK ALREADY BOOKED SEATS ---------- */
+    // 🔒 Check already booked
     const placeholders = seats.map(() => "?").join(",");
     const [existing] = await db.execute(
       `SELECT seat_number FROM bookings
@@ -44,8 +44,8 @@ exports.bookSeats = async (req, res) => {
       });
     }
 
-    /* ---------- INSERT BOOKINGS ---------- */
-    for (let seat of seats) {
+    // ✅ Insert bookings
+    for (const seat of seats) {
       await db.execute(
         `INSERT INTO bookings
          (route_id, seat_number, user_name, phone, amount, travel_date, status, email)
@@ -54,44 +54,44 @@ exports.bookSeats = async (req, res) => {
       );
     }
 
-    /* ---------- FETCH ROUTE INFO ---------- */
-    const [routeRows] = await db.execute(
-      "SELECT bus_name AS busName, departure, destination, departure_time AS departureTime FROM routes WHERE id=?",
+    // 📌 Route info
+    const [[route]] = await db.execute(
+      `SELECT bus_name AS busName, departure, destination,
+              departure_time AS departureTime
+       FROM routes WHERE id=?`,
       [routeId]
     );
-
-    const routeInfo = routeRows[0];
 
     const bookingData = {
       userName,
       email,
       phone,
-      busName: routeInfo.busName,
-      departure: routeInfo.departure,
-      destination: routeInfo.destination,
-      departureTime: routeInfo.departureTime,
+      busName: route.busName,
+      departure: route.departure,
+      destination: route.destination,
+      departureTime: route.departureTime,
       seats: seats.join(", "),
       amount,
     };
 
-    /* ---------- SEND MAILS ---------- */
+    // 📧 Emails (non-blocking)
     try {
-      // Send confirmation to user
       await sendBookingMail(email, bookingData, "CONFIRMATION");
 
-      // Send notification to admin
       if (process.env.ADMIN_EMAIL) {
-        await sendBookingMail(process.env.ADMIN_EMAIL, bookingData, "ADMIN_NOTIFICATION");
+        await sendBookingMail(
+          process.env.ADMIN_EMAIL,
+          bookingData,
+          "ADMIN_NOTIFICATION"
+        );
       }
     } catch (mailErr) {
-      console.error("⚠️ Mail failed but booking saved:", mailErr);
+      console.warn("⚠️ Mail failed but booking confirmed");
     }
 
-    /* ---------- FINAL RESPONSE ---------- */
     res.json({ success: true });
-
   } catch (err) {
-    console.error("❌ bookSeats error:", err);
+    console.error("❌ bookSeats:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -101,8 +101,8 @@ exports.getAllBookingsForAdmin = async (req, res) => {
   try {
     const [rows] = await db.execute(
       `SELECT b.id, b.user_name, b.seat_number AS seats, b.amount,
-              DATE_FORMAT(b.travel_date, '%d-%m-%Y') AS date,
-              CONCAT(r.departure, ' → ', r.destination) AS route
+              DATE_FORMAT(b.travel_date,'%d-%m-%Y') AS date,
+              CONCAT(r.departure,' → ',r.destination) AS route
        FROM bookings b
        JOIN routes r ON b.route_id = r.id
        ORDER BY b.created_at DESC`
@@ -110,28 +110,28 @@ exports.getAllBookingsForAdmin = async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("❌ getAllBookingsForAdmin error:", err);
+    console.error("❌ admin bookings:", err);
     res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };
 
-// ================= DELETE BOOKING =================
+// ================= DELETE =================
 exports.deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
 
     const [result] = await db.execute(
-      "DELETE FROM bookings WHERE id = ?",
+      "DELETE FROM bookings WHERE id=?",
       [id]
     );
 
-    if (result.affectedRows === 0) {
+    if (!result.affectedRows) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.json({ success: true, message: "Booking deleted" });
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Delete booking error:", err);
+    console.error("❌ deleteBooking:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
