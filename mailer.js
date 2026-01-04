@@ -3,26 +3,25 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, // TLS
+  secure: false,
   auth: {
-    user: process.env.MAIL_USER, // example@gmail.com
+    user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS, // Gmail App Password
-  },
-  tls: {
-    rejectUnauthorized: false,
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
 });
 
-// ✅ Verify transporter (Railway logs me dikhega)
-transporter.verify((err) => {
-  if (err) {
-    console.error("❌ Mail server error:", err);
-  } else {
-    console.log("✅ Mail server ready");
-  }
-});
+/**
+ * ❌ DO NOT verify() on Railway / production
+ * Gmail SMTP timeout causes app issues
+ */
+// if (process.env.NODE_ENV !== "production") {
+//   transporter.verify((err) => {
+//     if (err) console.error("Mail verify error:", err);
+//     else console.log("Mail server ready");
+//   });
+// }
 
 exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   let subject = "";
@@ -69,7 +68,7 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
 
     console.log(`✅ Mail sent → ${to} [${type}]`);
   } catch (err) {
-    console.error("❌ Mail sending failed:", err.message);
-    throw err;
+    console.error("❌ Mail failed (ignored):", err.message);
+    // ❌ DO NOT throw → booking must not fail
   }
 };
