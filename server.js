@@ -4,7 +4,10 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-// ================= DB Connection (Railway Correct Way) =================
+// ================= Routes =================
+app.get("/ping", (req, res) => res.send("pong")); // always alive
+
+// ================= DB Connection =================
 const db = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
@@ -16,15 +19,8 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-// ================= Debug =================
-console.log("DB CONFIG:", {
-  host: !!process.env.MYSQLHOST,
-  user: !!process.env.MYSQLUSER,
-  db: !!process.env.MYSQLDATABASE,
-});
-
-// ================= Routes =================
-app.get("/ping", async (req, res) => {
+// ================= Optional DB ping =================
+app.get("/ping-db", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT 1 AS test");
     res.json({ status: "ok", test: rows });
@@ -34,9 +30,8 @@ app.get("/ping", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
-});
+// ================= Other routes =================
+app.get("/", (req, res) => res.send("Backend is running!"));
 
 app.get("/api/bookings", async (req, res) => {
   try {
