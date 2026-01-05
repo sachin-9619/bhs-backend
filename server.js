@@ -8,15 +8,7 @@ app.use(express.json());
 app.get("/ping", (req, res) => res.send("pong"));
 
 // ================= DB POOL =================
-const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: Number(process.env.MYSQLPORT),
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+const db = mysql.createPool(process.env.MYSQL_URL);
 
 // ================= NON-BLOCKING DB CONNECT =================
 async function connectDB() {
@@ -26,6 +18,7 @@ async function connectDB() {
   } catch {
     console.error("❌ DB not ready, retrying in 3s...");  }
 }
+
 connectDB();
 
 // ================= SAMPLE API =================
