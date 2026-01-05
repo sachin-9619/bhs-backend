@@ -1,30 +1,20 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
+require("dotenv").config();
 
 const app = express();
+app.use(express.json());
 
-// Simple ping endpoint
+// Simple ping
 app.get("/ping", (req, res) => res.send("pong"));
 
-// === DB CONNECTION ===
-// Use your Railway public URL here
-// You can either use process.env.MYSQL_PUBLIC_URL or construct manually
-// For example, if your public URL is something like:
-// mysql://railway:password@containers-us-west-123.railway.app:port/railway
-
-const MYSQL_HOST = process.env.DB_HOST || "mysql-4kxk.railway.internal"; // internal for Railway deployment
-const MYSQL_PORT = process.env.DB_PORT || 3306;
-const MYSQL_USER = process.env.DB_USER || "railway";
-const MYSQL_PASSWORD = process.env.DB_PASSWORD || "zWnHlTNWODYLIjBTwivIPlGLendZTPsB";
-const MYSQL_DATABASE = process.env.DB_NAME || "railway";
-
-// Create connection pool
+// DB connection
 const db = mysql.createPool({
-  host: MYSQL_HOST,
-  port: MYSQL_PORT,
-  user: MYSQL_USER,
-  password: MYSQL_PASSWORD,
-  database: MYSQL_DATABASE,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -50,5 +40,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// Export db if you want to use it in routes
 module.exports = db;
