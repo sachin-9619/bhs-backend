@@ -19,7 +19,6 @@ async function connectDB() {
     console.log("✅ DB connected");
   } catch (err) {
     console.error("❌ DB ERROR:", err.code, err.message);
-    setTimeout(connectDB, 3);
   }
 }
 
