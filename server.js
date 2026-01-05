@@ -1,36 +1,30 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-const { URL } = require("url");
 
 const app = express();
 app.use(express.json());
 
 console.log("MYSQL_URL present:", !!process.env.MYSQL_URL);
 
-const dbUrl = new URL(process.env.MYSQL_URL);
+// ✅ DIRECTLY USE MYSQL_URL
+const db = mysql.createPool(process.env.MYSQL_URL);
 
-const db = mysql.createPool({
-  host: dbUrl.hostname,
-  user: "railway", // VERY IMPORTANT
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-/* ---------- ROUTES ---------- */
+/* -------- ROUTES -------- */
 app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
 app.get("/ping", async (req, res) => {
-  const [rows] = await db.query("SELECT 1 AS test");
-  res.json({ status: "ok", test: rows });
+  try {
+    const [rows] = await db.query("SELECT 1 AS test");
+    res.json({ status: "ok", test: rows });
+  } catch (err) {
+    console.error("DB ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-/* ---------- SAFE START ---------- */
+/* -------- SAFE START -------- */
 const PORT = process.env.PORT || 8080;
 
 (async () => {
@@ -44,6 +38,6 @@ const PORT = process.env.PORT || 8080;
     });
   } catch (err) {
     console.error("❌ FATAL DB ERROR:", err.message);
-    process.exit(1); // IMPORTANT
+    process.exit(1);
   }
 })();
