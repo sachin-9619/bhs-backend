@@ -31,6 +31,10 @@ app.get("/ping", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get("/", (req, res) => {
+  res.send("Backend is running! Use /ping or /api/bookings");
+});
+
 
 app.get("/api/bookings", async (req, res) => {
   try {
