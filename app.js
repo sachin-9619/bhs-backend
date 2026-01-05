@@ -17,3 +17,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
 
 module.exports = app;
+app.get("/ping", (req, res) => {
+  res.send("Backend alive 🚀");
+});

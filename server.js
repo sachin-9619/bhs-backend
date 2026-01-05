@@ -15,34 +15,39 @@ const db = mysql.createPool({
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
   waitForConnections: true,
-  connectionLimit: 10
+  connectionLimit: 10,
 });
-// ---------- ADMIN ROUTES ----------
-const adminRoutes = require("./routes/admin");
-app.use("/api/admin", adminRoutes);
-// ---------- TEST ROUTE ----------
+
+// Optional: DB test log
+db.getConnection()
+  .then(() => console.log("✅ DB Connected"))
+  .catch(err => console.error("❌ DB Connection Failed:", err.message));
+
+// ---------- HEALTH CHECK ----------
 app.get("/ping", (req, res) => {
   res.send("Backend alive 🚀");
 });
 
-// ---------- BOOKINGS ROUTE ----------
+// ---------- BOOKINGS API ----------
 app.get("/api/bookings", async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT b.id, b.userName, b.phone, b.seats, r.busName, r.departure, r.destination, r.departureTime
+      SELECT 
+        b.id, b.userName, b.phone, b.seats,
+        r.busName, r.departure, r.destination, r.departureTime
       FROM bookings b
       LEFT JOIN routes r ON b.route_id = r.id
       ORDER BY b.id DESC
     `);
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("❌ BOOKINGS ERROR:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
 // ---------- SERVER ----------
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port", PORT);
+  console.log("🚀 Server running on port", PORT);
 });
