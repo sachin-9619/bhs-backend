@@ -4,48 +4,50 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-console.log("DB ENV CHECK:", {
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
-});
+// ================= DB Connection (CORRECT WAY) =================
+const dbUrl = new URL(process.env.MYSQL_URL);
 
-// ✅ USE RAILWAY PROVIDED VARS
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
+  host: dbUrl.hostname,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.replace("/", ""),
+  port: dbUrl.port,
   waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
 });
 
-/* ---------- ROUTES ---------- */
-app.get("/", (req, res) => {
-  res.send("Backend is running");
-});
+// ================= Debug =================
+console.log("MYSQL_URL present:", !!process.env.MYSQL_URL);
 
+// ================= Routes =================
 app.get("/ping", async (req, res) => {
-  const [rows] = await db.query("SELECT 1 AS test");
-  res.json({ status: "ok", test: rows });
+  try {
+    const [rows] = await db.query("SELECT 1 AS test");
+    res.json({ status: "ok", test: rows });
+  } catch (err) {
+    console.error("DB ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get("/", (req, res) => {
+  res.send("Backend is running! Use /ping or /api/bookings");
 });
 
-/* ---------- SAFE START ---------- */
-const PORT = process.env.PORT || 8080;
 
-(async () => {
+app.get("/api/bookings", async (req, res) => {
   try {
-    console.log("Testing DB connection...");
-    await db.query("SELECT 1");
-    console.log("✅ DB connected");
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+    const [rows] = await db.query("SELECT * FROM bookings LIMIT 10");
+    res.json(rows);
   } catch (err) {
-    console.error("❌ FATAL DB ERROR:", err.message);
-    process.exit(1);
+    console.error("DB ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
-})();
+});
+
+// ================= Start Server =================
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
