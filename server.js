@@ -4,22 +4,24 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-// ================= DB Connection (CORRECT WAY) =================
-const dbUrl = new URL(process.env.MYSQL_URL);
-
+// ================= DB Connection (Railway Correct Way) =================
 const db = mysql.createPool({
-  host: dbUrl.hostname,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port,
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
 });
 
 // ================= Debug =================
-console.log("MYSQL_URL present:", !!process.env.MYSQL_URL);
+console.log("DB CONFIG:", {
+  host: !!process.env.MYSQLHOST,
+  user: !!process.env.MYSQLUSER,
+  db: !!process.env.MYSQLDATABASE,
+});
 
 // ================= Routes =================
 app.get("/ping", async (req, res) => {
@@ -31,10 +33,10 @@ app.get("/ping", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get("/", (req, res) => {
-  res.send("Backend is running! Use /ping or /api/bookings");
-});
 
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
 
 app.get("/api/bookings", async (req, res) => {
   try {
@@ -47,7 +49,7 @@ app.get("/api/bookings", async (req, res) => {
 });
 
 // ================= Start Server =================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
