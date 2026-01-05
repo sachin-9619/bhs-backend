@@ -8,14 +8,7 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 app.use(express.json());
 
-// ================= DB Connection =================
-const db = mysql.createPool({
-  host: process.env.DB_HOST,      // railway ENV
-  user: process.env.DB_USER,      // railway
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-});
+const db = mysql.createPool(process.env.MYSQL_URL);
 
 // ================= Debug Logs =================
 console.log("🚀 DB_USER:", process.env.DB_USER);
