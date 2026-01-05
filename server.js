@@ -24,9 +24,7 @@ async function connectDB() {
     await db.query("SELECT 1");
     console.log("✅ DB connected");
   } catch {
-    console.error("❌ DB not ready, retrying in 3s...");
-    setTimeout(connectDB, 3000);
-  }
+    console.error("❌ DB not ready, retrying in 3s...");  }
 }
 connectDB();
 
