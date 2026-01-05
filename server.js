@@ -4,10 +4,10 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-// Always-alive route
+// ================= ALWAYS-ALIVE ROUTE =================
 app.get("/ping", (req, res) => res.send("pong"));
 
-// DB Pool
+// ================= DB POOL =================
 const db = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
@@ -18,7 +18,7 @@ const db = mysql.createPool({
   connectionLimit: 10,
 });
 
-// Non-blocking DB connect
+// ================= NON-BLOCKING DB CONNECT =================
 async function connectDB() {
   try {
     await db.query("SELECT 1");
@@ -30,7 +30,7 @@ async function connectDB() {
 }
 connectDB();
 
-// API
+// ================= SAMPLE API =================
 app.get("/api/bookings", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM bookings LIMIT 10");
@@ -40,7 +40,11 @@ app.get("/api/bookings", async (req, res) => {
   }
 });
 
-// Start server
-app.listen(process.env.PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${process.env.PORT}`);
+// ================= START SERVER =================
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
+
+// ================= KEEP CONTAINER ALIVE =================
+setInterval(() => {}, 1 << 30);
