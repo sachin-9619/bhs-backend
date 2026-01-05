@@ -4,12 +4,10 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-/* ================= ALWAYS-ALIVE ROUTE ================= */
-app.get("/ping", (req, res) => {
-  res.status(200).send("pong");
-});
+// Always-alive route
+app.get("/ping", (req, res) => res.send("pong"));
 
-/* ================= DB POOL ================= */
+// DB Pool
 const db = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
@@ -20,19 +18,19 @@ const db = mysql.createPool({
   connectionLimit: 10,
 });
 
-/* ================= DB RETRY (NON-BLOCKING) ================= */
+// Non-blocking DB connect
 async function connectDB() {
   try {
     await db.query("SELECT 1");
     console.log("✅ DB connected");
-  } catch (err) {
+  } catch {
     console.error("❌ DB not ready, retrying in 3s...");
     setTimeout(connectDB, 3000);
   }
 }
 connectDB();
 
-/* ================= API ================= */
+// API
 app.get("/api/bookings", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM bookings LIMIT 10");
@@ -42,8 +40,7 @@ app.get("/api/bookings", async (req, res) => {
   }
 });
 
-/* ================= START SERVER ================= */
-const PORT = process.env.PORT;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Start server
+app.listen(process.env.PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${process.env.PORT}`);
 });
