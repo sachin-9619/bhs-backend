@@ -4,27 +4,35 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-console.log("MYSQL_URL present:", !!process.env.MYSQL_URL);
+console.log("DB ENV CHECK:", {
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT,
+});
 
-// ✅ DIRECTLY USE MYSQL_URL
-const db = mysql.createPool(process.env.MYSQL_URL);
+// ✅ USE RAILWAY PROVIDED VARS
+const db = mysql.createPool({
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT,
+  waitForConnections: true,
+  connectionLimit: 10,
+});
 
-/* -------- ROUTES -------- */
+/* ---------- ROUTES ---------- */
 app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
 app.get("/ping", async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT 1 AS test");
-    res.json({ status: "ok", test: rows });
-  } catch (err) {
-    console.error("DB ERROR:", err);
-    res.status(500).json({ error: err.message });
-  }
+  const [rows] = await db.query("SELECT 1 AS test");
+  res.json({ status: "ok", test: rows });
 });
 
-/* -------- SAFE START -------- */
+/* ---------- SAFE START ---------- */
 const PORT = process.env.PORT || 8080;
 
 (async () => {
