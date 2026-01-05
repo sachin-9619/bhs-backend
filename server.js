@@ -4,38 +4,27 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.use(express.json());
 
-// ================= ALWAYS-ALIVE ROUTE =================
-app.get("/ping", (req, res) => res.send("pong"));
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
 
-// ================= DB POOL =================
 const db = mysql.createPool(process.env.MYSQL_URL);
 
-// ================= NON-BLOCKING DB CONNECT =================
+// 🔥 IMPORTANT: actual error log karo
 async function connectDB() {
   try {
-    await db.query("SELECT 1");
+    const conn = await db.getConnection();
+    await conn.query("SELECT 1");
+    conn.release();
     console.log("✅ DB connected");
-  } catch {
-    console.error("❌ DB not ready, retrying in 3s...");  }
+  } catch (err) {
+    console.error("❌ DB ERROR:", err.code, err.message);
+    setTimeout(connectDB, 3000);
+  }
 }
 
 connectDB();
 
-// ================= SAMPLE API =================
-app.get("/api/bookings", async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM bookings LIMIT 10");
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.listen(process.env.PORT || 8080, "0.0.0.0", () => {
+  console.log("🚀 Server running on port 8080");
 });
-
-// ================= START SERVER =================
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
-
-// ================= KEEP CONTAINER ALIVE =================
-setInterval(() => {}, 1 << 30);
