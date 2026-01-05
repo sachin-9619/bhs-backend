@@ -1,21 +1,21 @@
-// server.js
 const express = require("express");
 const mysql = require("mysql2/promise");
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ path: '.env.local', override: false });
-}
 
 const app = express();
 app.use(express.json());
 
-const db = mysql.createPool(process.env.MYSQL_URL);
+// ================= DB Connection (CORRECT WAY) =================
+const db = mysql.createPool({
+  uri: process.env.MYSQL_URL,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-// ================= Debug Logs =================
-console.log("🚀 DB_USER:", process.env.DB_USER);
-console.log("🚀 DB_HOST:", process.env.DB_HOST);
-console.log("🚀 DB_NAME:", process.env.DB_NAME);
+// ================= Debug =================
+console.log("MYSQL_URL present:", !!process.env.MYSQL_URL);
 
-// ================= Minimal Test Route =================
+// ================= Routes =================
 app.get("/ping", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT 1 AS test");
@@ -26,7 +26,6 @@ app.get("/ping", async (req, res) => {
   }
 });
 
-// ================= Example Bookings Route =================
 app.get("/api/bookings", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM bookings LIMIT 10");
@@ -38,7 +37,7 @@ app.get("/api/bookings", async (req, res) => {
 });
 
 // ================= Start Server =================
-const PORT = process.env.LOCAL_PORT || 5000;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
