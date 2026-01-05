@@ -5,12 +5,12 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
-// Simple ping
+// === Simple ping route ===
 app.get("/ping", (req, res) => res.send("pong"));
 
-// DB connection
+// === Database connection ===
 const db = mysql.createPool({
-  host: process.env.DB_HOST,
+  host: process.env.DB_HOST,       
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -20,21 +20,22 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-// Test DB connection
+// Test DB connection on start
 async function connectDB() {
   try {
     const conn = await db.getConnection();
-    await conn.query("SELECT 1");
+    await conn.query("SELECT 1");  
     conn.release();
-    console.log("✅ DB connected");
+    console.log("✅ DB connected (Railway internal)");
   } catch (err) {
     console.error("❌ DB ERROR:", err.code, err.sqlMessage || err.message);
+    process.exit(1); 
   }
 }
 
 connectDB();
 
-// Start server
+// === Start server ===
 const PORT = process.env.LOCAL_PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
