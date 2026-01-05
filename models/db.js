@@ -1,6 +1,6 @@
 // db.js
 const mysql = require("mysql2/promise");
-require("dotenv").config();
+require('dotenv').config({ path: '.env.local', override: false });
 
 const db = mysql.createPool({
   host: process.env.DB_HOST,

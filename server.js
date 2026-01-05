@@ -1,7 +1,9 @@
 // server.js
 const express = require("express");
 const mysql = require("mysql2/promise");
-require("dotenv").config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: '.env.local', override: false });
+}
 
 const app = express();
 app.use(express.json());
