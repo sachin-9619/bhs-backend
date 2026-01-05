@@ -5,8 +5,14 @@ const app = express();
 app.use(express.json());
 
 // ================= DB Connection (CORRECT WAY) =================
+const dbUrl = new URL(process.env.MYSQL_URL);
+
 const db = mysql.createPool({
-  uri: process.env.MYSQL_URL,
+  host: dbUrl.hostname,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.replace("/", ""),
+  port: dbUrl.port,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
