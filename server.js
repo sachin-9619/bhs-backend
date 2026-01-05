@@ -4,13 +4,13 @@ const mysql = require("mysql2/promise");
 const app = express();
 app.get("/ping", (req, res) => res.send("pong"));
 
-const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  port: Number(process.env.MYSQLPORT),
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-});
+const encodedPassword = encodeURIComponent(
+  "zWnHlTNWODYLIjBTwivIPlGLendZTPsB"
+);
+
+const MYSQL_URL = `mysql://railway:zWnHlTNWODYLIjBTwivIPlGLendZTPsB@mysql-4kxk.railway.internal:3306/railway`;
+
+const db = mysql.createPool(MYSQL_URL);
 
 async function connectDB() {
   try {
