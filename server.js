@@ -7,28 +7,31 @@ app.use(express.json());
 
 app.get("/ping", (req, res) => res.send("pong"));
 
-// ✅ Railway MySQL (CORRECT WAY)
-const dbUrl = new URL(process.env.MYSQL_URL);
-
-const db = mysql.createPool({
-  host: dbUrl.hostname,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port,
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+let db;
 
 async function connectDB() {
   try {
-    const conn = await db.getConnection();
-    await conn.query("SELECT 1");
-    conn.release();
+    if (!process.env.MYSQL_URL) {
+      console.log("⚠️ MYSQL_URL not found, skipping DB connection");
+      return;
+    }
+
+    const dbUrl = new URL(process.env.MYSQL_URL);
+
+    db = mysql.createPool({
+      host: dbUrl.hostname,
+      user: dbUrl.username,
+      password: dbUrl.password,
+      database: dbUrl.pathname.replace("/", ""),
+      port: dbUrl.port,
+      waitForConnections: true,
+      connectionLimit: 10,
+    });
+
+    await db.query("SELECT 1");
     console.log("✅ DB connected (Railway MySQL)");
   } catch (err) {
     console.error("❌ DB ERROR:", err.message);
-    process.exit(1);
   }
 }
 
