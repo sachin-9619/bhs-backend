@@ -1,17 +1,20 @@
+// routes/booking.js
 const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/bookingController");
 
-// seats
+// GET booked seats
+// /api/booking/:routeId/seats?date=YYYY-MM-DD
 router.get("/:routeId/seats", bookingController.getBookedSeats);
 
-// booking
+// BOOK seats
+// /api/booking/:routeId
 router.post("/:routeId", bookingController.bookSeats);
 
-// admin view
+// ADMIN – all bookings
 router.get("/", bookingController.getAllBookingsForAdmin);
 
-// delete booking
+// DELETE booking
 router.delete("/:id", bookingController.deleteBooking);
 
 module.exports = router;

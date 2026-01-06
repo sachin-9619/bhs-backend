@@ -1,8 +1,8 @@
-const db = require("../db");
+const db = require("../models/db");
 
 /**
- * GET booked seats by route + date
- * URL: /api/booking/:routeId/seats?date=YYYY-MM-DD
+ * GET booked seats
+ * /api/booking/:routeId/seats?date=YYYY-MM-DD
  */
 exports.getBookedSeats = async (req, res) => {
   try {
@@ -16,76 +16,95 @@ exports.getBookedSeats = async (req, res) => {
     }
 
     const [rows] = await db.query(
-      "SELECT seat_number FROM bookings WHERE route_id = ? AND journey_date = ?",
+      "SELECT seat_number FROM bookings WHERE route_id=? AND journey_date=?",
       [routeId, date]
     );
 
-    const bookedSeats = rows.map(r => r.seat_number);
-
-    res.json({
-      routeId,
-      date,
-      bookedSeats
-    });
-
-  } catch (error) {
-    console.error("getBookedSeats error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.json(rows.map(r => Number(r.seat_number)));
+  } catch (err) {
+    console.error("❌ getBookedSeats:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
 /**
- * POST book seats
- * URL: /api/booking/:routeId
+ * BOOK seats
+ * /api/booking/:routeId
  */
 exports.bookSeats = async (req, res) => {
   try {
     const { routeId } = req.params;
-    const { seats, date, userId } = req.body;
+    const { seats, date, userName, phone, email, amount } = req.body;
 
-    if (!routeId || !seats || !date) {
-      return res.status(400).json({ message: "Missing data" });
+    if (!seats?.length || !date || !userName || !phone) {
+      return res.status(400).json({ message: "Invalid booking data" });
     }
 
+    // check already booked seats
+    const placeholders = seats.map(() => "?").join(",");
+    const [existing] = await db.query(
+      `SELECT seat_number FROM bookings 
+       WHERE route_id=? AND journey_date=? AND seat_number IN (${placeholders})`,
+      [routeId, date, ...seats]
+    );
+
+    if (existing.length) {
+      return res.status(400).json({
+        message: "Seats already booked",
+        bookedSeats: existing.map(e => Number(e.seat_number))
+      });
+    }
+
+    // insert seats
     for (let seat of seats) {
       await db.query(
-        "INSERT INTO bookings(route_id, seat_number, journey_date, user_id) VALUES (?, ?, ?, ?)",
-        [routeId, seat, date, userId || null]
+        `INSERT INTO bookings
+        (route_id, seat_number, journey_date, user_name, phone, email, amount, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'CONFIRMED')`,
+        [routeId, seat, date, userName, phone, email || null, amount || 0]
       );
     }
 
-    res.json({ message: "Seats booked successfully" });
-
-  } catch (error) {
-    console.error("bookSeats error:", error);
-    res.status(500).json({ message: "Booking failed" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ bookSeats:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
 /**
- * Admin: get all bookings
+ * ADMIN – get all bookings
  */
 exports.getAllBookingsForAdmin = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM bookings");
+    const [rows] = await db.query(
+      "SELECT * FROM bookings ORDER BY created_at DESC"
+    );
     res.json(rows);
-  } catch (error) {
+  } catch (err) {
+    console.error("❌ getAllBookingsForAdmin:", err);
     res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };
 
-
 /**
- * Delete booking
+ * DELETE booking
  */
 exports.deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM bookings WHERE id = ?", [id]);
-    res.json({ message: "Booking deleted" });
-  } catch (error) {
-    res.status(500).json({ message: "Delete failed" });
+    const [result] = await db.query(
+      "DELETE FROM bookings WHERE id=?",
+      [id]
+    );
+
+    if (!result.affectedRows) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ deleteBooking:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

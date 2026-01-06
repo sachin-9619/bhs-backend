@@ -9,22 +9,40 @@ const contactRoutes = require("./routes/contact");
 
 const app = express();
 
-// ✅ Enable CORS for your frontend
+/* ===========================
+   ✅ CORS CONFIG (FINAL)
+=========================== */
 app.use(cors({
-  origin: "https://bhs-more45.netlify.app", // ✅ EXACT
+  origin: [
+    "http://localhost:5173",
+    "https://bhs-more45.netlify.app"
+  ],
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// ✅ VERY IMPORTANT (preflight fix)
+app.options("*", cors());
 
-// ✅ Parse JSON bodies
+/* ===========================
+   MIDDLEWARES
+=========================== */
 app.use(express.json());
 
-// ✅ Routes
+/* ===========================
+   ROUTES
+=========================== */
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
+
+/* ===========================
+   HEALTH CHECK
+=========================== */
+app.get("/", (req, res) => {
+  res.send("BHS Backend Running ✅");
+});
 
 module.exports = app;
