@@ -1,43 +1,32 @@
-// server.js
-const app = require("./app");      // import Express app with routes & CORS
-const mysql = require("mysql2/promise");
+const express = require("express");
+const cors = require("cors");
+
 require("dotenv").config();
+require("./db"); // ✅ only initialize DB
 
-// ================= DB SETUP =================
-const dbUrl = new URL(process.env.MYSQL_URL);
+const routeRoutes = require("./routes/routes");
+const bookingRoutes = require("./routes/booking");
+const adminRoutes = require("./routes/admin");
+const contactRoutes = require("./routes/contact");
 
-const db = mysql.createPool({
-  host: dbUrl.hostname,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+const app = express();
 
-console.log("DEBUG MYSQL_URL:", process.env.MYSQL_URL);
+app.use(cors({
+  origin: [
+    "https://bhs-more.netlify.app",
+    "https://bhs-more45.netlify.app"
+  ],
+  credentials: true
+}));
 
-// Test DB connection
-async function connectDB() {
-  try {
-    const conn = await db.getConnection();
-    await conn.query("SELECT 1");
-    conn.release();
-    console.log(`✅ DB connected (${process.env.NODE_ENV || "local"})`);
-  } catch (err) {
-    console.error("❌ DB ERROR:", err.code, err.sqlMessage || err.message);
-  }
-}
+app.use(express.json());
 
-connectDB();
+app.use("/api/routes", routeRoutes);
+app.use("/api/booking", bookingRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/contact", contactRoutes);
 
-// ================= START SERVER =================
-const PORT = process.env.LOCAL_PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-// ================= EXPORT DB =================
-module.exports = db;

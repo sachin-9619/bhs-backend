@@ -1,147 +1,91 @@
-const db = require("../server");        // DB pool
-const { sendBookingMail } = require("../mailer");
+const db = require("../db");
 
-// ================= GET BOOKED SEATS =================
+/**
+ * GET booked seats by route + date
+ * URL: /api/booking/:routeId/seats?date=YYYY-MM-DD
+ */
 exports.getBookedSeats = async (req, res) => {
   try {
     const { routeId } = req.params;
     const { date } = req.query;
 
-    const [rows] = await db.execute(
-      "SELECT seat_number FROM bookings WHERE route_id=? AND travel_date=?",
-      [routeId, date]
-    );
-
-    res.json(rows.map(r => Number(r.seat_number)));
-  } catch (err) {
-    console.error("❌ getBookedSeats:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// ================= BOOK SEATS =================
-exports.bookSeats = async (req, res) => {
-  try {
-    const { routeId } = req.params;
-    const { seats, userName, phone, travelDate, amount, email } = req.body;
-
-    if (!seats?.length || !travelDate || !email || !userName || !phone) {
-      return res.status(400).json({ message: "Invalid booking data" });
-    }
-
-    // Check already booked seats
-    const placeholders = seats.map(() => "?").join(",");
-    const [existing] = await db.execute(
-      `SELECT seat_number FROM bookings
-       WHERE route_id=? AND travel_date=? AND seat_number IN (${placeholders})`,
-      [routeId, travelDate, ...seats]
-    );
-
-    if (existing.length) {
+    if (!routeId || !date) {
       return res.status(400).json({
-        message: "Seats already booked",
-        bookedSeats: existing.map(e => Number(e.seat_number)),
+        message: "routeId and date are required"
       });
     }
 
-    // Insert bookings
-    for (const seat of seats) {
-      await db.execute(
-        `INSERT INTO bookings
-         (route_id, seat_number, user_name, phone, amount, travel_date, status, email)
-         VALUES (?, ?, ?, ?, ?, ?, 'CONFIRMED', ?)`,
-        [routeId, seat, userName, phone, amount, travelDate, email]
+    const [rows] = await db.query(
+      "SELECT seat_number FROM bookings WHERE route_id = ? AND journey_date = ?",
+      [routeId, date]
+    );
+
+    const bookedSeats = rows.map(r => r.seat_number);
+
+    res.json({
+      routeId,
+      date,
+      bookedSeats
+    });
+
+  } catch (error) {
+    console.error("getBookedSeats error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+/**
+ * POST book seats
+ * URL: /api/booking/:routeId
+ */
+exports.bookSeats = async (req, res) => {
+  try {
+    const { routeId } = req.params;
+    const { seats, date, userId } = req.body;
+
+    if (!routeId || !seats || !date) {
+      return res.status(400).json({ message: "Missing data" });
+    }
+
+    for (let seat of seats) {
+      await db.query(
+        "INSERT INTO bookings(route_id, seat_number, journey_date, user_id) VALUES (?, ?, ?, ?)",
+        [routeId, seat, date, userId || null]
       );
     }
 
-    // Get route info
-    const [[route]] = await db.execute(
-      `SELECT bus_name AS busName, departure, destination,
-              departure_time AS departureTime
-       FROM routes WHERE id=?`,
-      [routeId]
-    );
+    res.json({ message: "Seats booked successfully" });
 
-    const bookingData = {
-      userName,
-      email,
-      phone,
-      busName: route.busName,
-      departure: route.departure,
-      destination: route.destination,
-      departureTime: route.departureTime,
-      seats: seats.join(", "),
-      amount,
-    };
-
-    // Send emails (non-blocking)
-    try {
-      await sendBookingMail(email, bookingData, "CONFIRMATION");
-      if (process.env.ADMIN_EMAIL) {
-        await sendBookingMail(process.env.ADMIN_EMAIL, bookingData, "ADMIN_NOTIFICATION");
-      }
-    } catch (mailErr) {
-      console.warn("⚠️ Mail failed but booking confirmed");
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("❌ bookSeats:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("bookSeats error:", error);
+    res.status(500).json({ message: "Booking failed" });
   }
 };
 
-// ================= GET BOOKING BY ID =================
-exports.getBookingById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await db.execute(
-      "SELECT * FROM bookings WHERE id=?",
-      [id]
-    );
 
-    if (!rows.length) return res.status(404).json({ message: "Booking not found" });
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("❌ getBookingById:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// ================= ADMIN VIEW =================
+/**
+ * Admin: get all bookings
+ */
 exports.getAllBookingsForAdmin = async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      `SELECT b.id, b.user_name, b.seat_number AS seats, b.amount,
-              DATE_FORMAT(b.travel_date,'%d-%m-%Y') AS date,
-              CONCAT(r.departure,' → ',r.destination) AS route
-       FROM bookings b
-       JOIN routes r ON b.route_id = r.id
-       ORDER BY b.created_at DESC`
-    );
-
+    const [rows] = await db.query("SELECT * FROM bookings");
     res.json(rows);
-  } catch (err) {
-    console.error("❌ getAllBookingsForAdmin:", err);
+  } catch (error) {
     res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };
 
-// ================= DELETE =================
+
+/**
+ * Delete booking
+ */
 exports.deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.execute(
-      "DELETE FROM bookings WHERE id=?",
-      [id]
-    );
-
-    if (!result.affectedRows) return res.status(404).json({ message: "Booking not found" });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("❌ deleteBooking:", err);
-    res.status(500).json({ message: "Server error" });
+    await db.query("DELETE FROM bookings WHERE id = ?", [id]);
+    res.json({ message: "Booking deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Delete failed" });
   }
 };
