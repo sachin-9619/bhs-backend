@@ -9,13 +9,13 @@ router.get("/:routeId/seats", bookingController.getBookedSeats);
 // ================= BOOK SEATS =================
 router.post("/:routeId", bookingController.bookSeats);
 
-// ================= GET BOOKING BY ID =================
-router.get("/:id", bookingController.getBookingById);
-
 // ================= ADMIN VIEW =================
 router.get("/", bookingController.getAllBookingsForAdmin);
 
+// ================= GET BOOKING BY ID =================
+router.get("/id/:id", bookingController.getBookingById);
+
 // ================= DELETE =================
-router.delete("/:id", bookingController.deleteBooking);
+router.delete("/id/:id", bookingController.deleteBooking);
 
 module.exports = router;
