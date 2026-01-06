@@ -11,10 +11,12 @@ const app = express();
 
 // ✅ Enable CORS for your frontend
 app.use(cors({
-  origin: "https://bhs-more.netlify.app", // only your frontend
-  methods: ["GET","POST","PUT","DELETE"],
+  origin: "https://bhs-more45.netlify.app", // ✅ EXACT
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
 
 // ✅ Parse JSON bodies
 app.use(express.json());
