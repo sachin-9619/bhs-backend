@@ -1,11 +1,21 @@
+// routes/booking.js
 const express = require("express");
 const router = express.Router();
-const routeController = require("../controllers/routeController");
+const bookingController = require("../controllers/bookingController");
 
-// CRUD routes
-router.get("/", routeController.getAllRoutesForAdmin);
-router.post("/", routeController.addRoute);
-router.put("/:id", routeController.updateRoute);
-router.delete("/:id", routeController.deleteRoute);
+// ================= BOOKED SEATS =================
+router.get("/:routeId/seats", bookingController.getBookedSeats);
+
+// ================= BOOK SEATS =================
+router.post("/:routeId", bookingController.bookSeats);
+
+// ================= GET BOOKING BY ID =================
+router.get("/:id", bookingController.getBookingById);
+
+// ================= ADMIN VIEW =================
+router.get("/", bookingController.getAllBookingsForAdmin);
+
+// ================= DELETE =================
+router.delete("/:id", bookingController.deleteBooking);
 
 module.exports = router;

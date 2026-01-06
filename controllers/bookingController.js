@@ -1,4 +1,4 @@
-const db = require("../models/db");
+const db = require("../server");        // DB pool
 const { sendBookingMail } = require("../mailer");
 
 // ================= GET BOOKED SEATS =================
@@ -29,7 +29,7 @@ exports.bookSeats = async (req, res) => {
       return res.status(400).json({ message: "Invalid booking data" });
     }
 
-    // 🔒 Check already booked
+    // Check already booked seats
     const placeholders = seats.map(() => "?").join(",");
     const [existing] = await db.execute(
       `SELECT seat_number FROM bookings
@@ -44,7 +44,7 @@ exports.bookSeats = async (req, res) => {
       });
     }
 
-    // ✅ Insert bookings
+    // Insert bookings
     for (const seat of seats) {
       await db.execute(
         `INSERT INTO bookings
@@ -54,7 +54,7 @@ exports.bookSeats = async (req, res) => {
       );
     }
 
-    // 📌 Route info
+    // Get route info
     const [[route]] = await db.execute(
       `SELECT bus_name AS busName, departure, destination,
               departure_time AS departureTime
@@ -74,16 +74,11 @@ exports.bookSeats = async (req, res) => {
       amount,
     };
 
-    // 📧 Emails (non-blocking)
+    // Send emails (non-blocking)
     try {
       await sendBookingMail(email, bookingData, "CONFIRMATION");
-
       if (process.env.ADMIN_EMAIL) {
-        await sendBookingMail(
-          process.env.ADMIN_EMAIL,
-          bookingData,
-          "ADMIN_NOTIFICATION"
-        );
+        await sendBookingMail(process.env.ADMIN_EMAIL, bookingData, "ADMIN_NOTIFICATION");
       }
     } catch (mailErr) {
       console.warn("⚠️ Mail failed but booking confirmed");
@@ -96,7 +91,25 @@ exports.bookSeats = async (req, res) => {
   }
 };
 
-// ================= ADMIN =================
+// ================= GET BOOKING BY ID =================
+exports.getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute(
+      "SELECT * FROM bookings WHERE id=?",
+      [id]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: "Booking not found" });
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("❌ getBookingById:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= ADMIN VIEW =================
 exports.getAllBookingsForAdmin = async (req, res) => {
   try {
     const [rows] = await db.execute(
@@ -110,7 +123,7 @@ exports.getAllBookingsForAdmin = async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("❌ admin bookings:", err);
+    console.error("❌ getAllBookingsForAdmin:", err);
     res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };
@@ -119,15 +132,12 @@ exports.getAllBookingsForAdmin = async (req, res) => {
 exports.deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
-
     const [result] = await db.execute(
       "DELETE FROM bookings WHERE id=?",
       [id]
     );
 
-    if (!result.affectedRows) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
+    if (!result.affectedRows) return res.status(404).json({ message: "Booking not found" });
 
     res.json({ success: true });
   } catch (err) {
