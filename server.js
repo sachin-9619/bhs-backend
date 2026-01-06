@@ -1,6 +1,6 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-require("dotenv").config({ path: process.env.NODE_ENV === "production" ? ".env" : ".env.local" });
+require("dotenv").config();
 
 const app = express();
 app.use(express.json());
@@ -25,7 +25,7 @@ async function connectDB() {
     const conn = await db.getConnection();
     await conn.query("SELECT 1");
     conn.release();
-    console.log(`✅ DB connected (${process.env.NODE_ENV || "local"})`);
+    console.log(`✅ DB connected (${process.env.NODE_ENV })`);
   } catch (err) {
     console.error("❌ DB ERROR:", err.code, err.sqlMessage || err.message);
   }
