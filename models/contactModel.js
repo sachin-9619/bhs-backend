@@ -1,4 +1,4 @@
-const pool = require('./db');
+const pool = require('../db');
 
 const Contact = {
   saveContact: async ({ firstName, lastName, email, phone, subject, message }) => {

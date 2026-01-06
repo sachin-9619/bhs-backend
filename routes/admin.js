@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../models/db"); // adjust path if needed
+const db = require("/db"); // adjust path if needed
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken"); // if you want token generation
 
