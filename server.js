@@ -1,6 +1,6 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-require("dotenv").config({ path: process.env.NODE_ENV === "production" ? ".env" : ".env.local" });
+require("dotenv").config();
 
 const app = express();
 app.use(express.json());
