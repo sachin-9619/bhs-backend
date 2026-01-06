@@ -33,10 +33,10 @@ app.use(express.json());
 /* ===========================
    ROUTES (FINAL FIX)
 =========================== */
-app.use("/api/routes", routeRoutes);
-app.use("/api/booking", bookingRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/contact", contactRoutes);
+app.use("/routes", routeRoutes);
+app.use("/booking", bookingRoutes);
+app.use("/admin", adminRoutes);
+app.use("/contact", contactRoutes);
 
 /* ===========================
    HEALTH CHECK
