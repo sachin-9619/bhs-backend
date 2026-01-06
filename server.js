@@ -18,7 +18,7 @@ const db = mysql.createPool({
   database: dbUrl.pathname.replace("/", ""),
   port: dbUrl.port,
 });
-
+console.log("DEBUG MYSQL_URL:", process.env.MYSQL_URL);
 // Test DB connection
 async function connectDB() {
   try {
