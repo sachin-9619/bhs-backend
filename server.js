@@ -1,9 +1,14 @@
-// server.js
-const app = require("./app");      // import Express app with routes & CORS
+const express = require("express");
 const mysql = require("mysql2/promise");
 require("dotenv").config();
 
-// ================= DB SETUP =================
+const app = express();
+app.use(express.json());
+
+// Simple ping
+app.get("/ping", (req, res) => res.send("pong"));
+
+// DB connection
 const dbUrl = new URL(process.env.MYSQL_URL);
 
 const db = mysql.createPool({
@@ -11,14 +16,9 @@ const db = mysql.createPool({
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  port: dbUrl.port,
 });
-
 console.log("DEBUG MYSQL_URL:", process.env.MYSQL_URL);
-
 // Test DB connection
 async function connectDB() {
   try {
@@ -33,11 +33,10 @@ async function connectDB() {
 
 connectDB();
 
-// ================= START SERVER =================
+// Start server
 const PORT = process.env.LOCAL_PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// ================= EXPORT DB =================
 module.exports = db;
