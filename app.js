@@ -10,6 +10,13 @@ const contactRoutes = require("./routes/contact");
 const app = express();
 
 /* ===========================
+   HEALTH CHECK
+=========================== */
+app.get("/", (req, res) => {
+  res.send("BHS Backend Running ✅");
+});
+
+/* ===========================
    ✅ CORS CONFIG (FINAL)
 =========================== */
 app.use(cors({
@@ -21,9 +28,6 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
-// ✅ VERY IMPORTANT (preflight fix)
-app.options("*", cors());
 
 /* ===========================
    MIDDLEWARES
@@ -38,11 +42,5 @@ app.use("/api/booking", bookingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
 
-/* ===========================
-   HEALTH CHECK
-=========================== */
-app.get("/", (req, res) => {
-  res.send("BHS Backend Running ✅");
-});
 
 module.exports = app;

@@ -1,7 +1,9 @@
 const mysql = require("mysql2/promise");
 
 const dbUrl = new URL(process.env.MYSQL_URL);
-
+if (!process.env.MYSQL_URL) {
+  throw new Error("❌ MYSQL_URL missing in .env or Railway variables!");
+}
 const db = mysql.createPool({
   host: dbUrl.hostname,
   user: dbUrl.username,
