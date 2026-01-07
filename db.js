@@ -1,5 +1,4 @@
 const mysql = require("mysql2/promise");
-require("dotenv").config();
 
 const dbUrl = new URL(process.env.MYSQL_URL);
 
@@ -8,9 +7,13 @@ const db = mysql.createPool({
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port,
+  port: dbUrl.port || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
+// Test connection
 (async () => {
   try {
     const conn = await db.getConnection();
