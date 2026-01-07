@@ -2,7 +2,7 @@ require("dotenv").config();
 const app = require("./app");
 const { initDB } = require("./db");
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 if (!PORT) throw new Error("PORT not set");
 
 // 🚀 START SERVER FIRST (VERY IMPORTANT)
