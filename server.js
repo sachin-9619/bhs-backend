@@ -1,14 +1,17 @@
+const app = require("./app");
 const express = require("express");
 const { initDB } = require("./db");
 
-const app = express();
 app.use(express.json());
 
+// 🔥 AUTO INIT DB
 initDB();
 
 app.get("/", (req, res) => {
-  res.send("Backend + DB ready 🚀");
+  res.send("Backend running + DB ready 🚀");
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log("🚀 listening"));
+app.listen(PORT, () => {
+  console.log("🚀 listening");
+});

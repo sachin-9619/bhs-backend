@@ -1,22 +1,21 @@
 const mysql = require("mysql2/promise");
 
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+// 🔐 Safety check
+if (!process.env.MYSQL_URL) {
+  console.error("❌ MYSQL_URL missing in environment variables");
+  process.exit(1);
+}
+
+// 🔗 Pool via Railway MYSQL_URL
+const pool = mysql.createPool(process.env.MYSQL_URL);
 
 async function initDB() {
   let conn;
   try {
     conn = await pool.getConnection();
-    console.log("✅ DB connected");
+    console.log("✅ DB connected via MYSQL_URL");
 
-    /* ================= ADMINS ================= */
+    // ================= ADMINS =================
     await conn.query(`
       CREATE TABLE IF NOT EXISTS admins (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +25,7 @@ async function initDB() {
       ) ENGINE=InnoDB
     `);
 
-    /* ================= ROUTES ================= */
+    // ================= ROUTES =================
     await conn.query(`
       CREATE TABLE IF NOT EXISTS routes (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,20 +42,19 @@ async function initDB() {
       ) ENGINE=InnoDB
     `);
 
-    /* ================= ROUTE POINTS ================= */
+    // ================= ROUTE POINTS =================
     await conn.query(`
       CREATE TABLE IF NOT EXISTS route_points (
         id INT AUTO_INCREMENT PRIMARY KEY,
         route_id INT,
         city VARCHAR(100),
         time VARCHAR(20),
-        CONSTRAINT fk_route_points
-          FOREIGN KEY (route_id) REFERENCES routes(id)
+        FOREIGN KEY (route_id) REFERENCES routes(id)
           ON DELETE CASCADE
       ) ENGINE=InnoDB
     `);
 
-    /* ================= BOOKINGS ================= */
+    // ================= BOOKINGS =================
     await conn.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,13 +67,12 @@ async function initDB() {
         travel_date DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         email VARCHAR(100),
-        CONSTRAINT fk_bookings
-          FOREIGN KEY (route_id) REFERENCES routes(id)
+        FOREIGN KEY (route_id) REFERENCES routes(id)
           ON DELETE CASCADE
       ) ENGINE=InnoDB
     `);
 
-    /* ================= CONTACTS ================= */
+    // ================= CONTACTS =================
     await conn.query(`
       CREATE TABLE IF NOT EXISTS contacts (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -89,10 +86,10 @@ async function initDB() {
       ) ENGINE=InnoDB
     `);
 
-    console.log("🎉 All tables created / verified");
+    console.log("🎉 All tables created / verified successfully");
 
   } catch (err) {
-    console.error("❌ DB init failed FULL ERROR:", err);
+    console.error("❌ DB init failed:", err);
   } finally {
     if (conn) conn.release();
   }
