@@ -1,6 +1,8 @@
+// ✅ Correct order
+require("dotenv").config();   // <-- sabse top pe
+
 const app = require("./app");
 const { initDB } = require("./db");
-require("dotenv").config();
 
 (async () => {
   try {
