@@ -1,12 +1,14 @@
-const app = require("./app");
+const express = require("express");
 const { initDB } = require("./db");
 
-initDB(); 
-// side effects AFTER load
-require("./db");
-require("./bookingReminderCron");
+const app = express();
+app.use(express.json());
+
+initDB();
+
+app.get("/", (req, res) => {
+  res.send("Backend + DB ready 🚀");
+});
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 listening");
-});
+app.listen(PORT, () => console.log("🚀 listening"));

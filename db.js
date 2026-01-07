@@ -11,19 +11,23 @@ const pool = mysql.createPool({
 });
 
 async function initDB() {
+  let conn;
   try {
+    conn = await pool.getConnection();
+    console.log("✅ DB connected");
+
     /* ================= ADMINS ================= */
-    await pool.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS admins (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(100),
         password VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      ) ENGINE=InnoDB
     `);
 
     /* ================= ROUTES ================= */
-    await pool.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS routes (
         id INT AUTO_INCREMENT PRIMARY KEY,
         bus_name VARCHAR(100),
@@ -36,22 +40,24 @@ async function initDB() {
         price INT,
         available_seats INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      ) ENGINE=InnoDB
     `);
 
     /* ================= ROUTE POINTS ================= */
-    await pool.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS route_points (
         id INT AUTO_INCREMENT PRIMARY KEY,
         route_id INT,
         city VARCHAR(100),
         time VARCHAR(20),
-        FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
-      )
+        CONSTRAINT fk_route_points
+          FOREIGN KEY (route_id) REFERENCES routes(id)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB
     `);
 
     /* ================= BOOKINGS ================= */
-    await pool.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         route_id INT,
@@ -63,12 +69,14 @@ async function initDB() {
         travel_date DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         email VARCHAR(100),
-        FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
-      )
+        CONSTRAINT fk_bookings
+          FOREIGN KEY (route_id) REFERENCES routes(id)
+          ON DELETE CASCADE
+      ) ENGINE=InnoDB
     `);
 
     /* ================= CONTACTS ================= */
-    await pool.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS contacts (
         id INT AUTO_INCREMENT PRIMARY KEY,
         first_name VARCHAR(100),
@@ -78,12 +86,15 @@ async function initDB() {
         subject VARCHAR(100),
         message TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      ) ENGINE=InnoDB
     `);
 
-    console.log("✅ All tables verified / auto-created");
+    console.log("🎉 All tables created / verified");
+
   } catch (err) {
-    console.error("❌ DB init failed:", err.message);
+    console.error("❌ DB init failed FULL ERROR:", err);
+  } finally {
+    if (conn) conn.release();
   }
 }
 
