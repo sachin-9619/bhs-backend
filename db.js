@@ -4,21 +4,14 @@ const dbUrl = new URL(process.env.MYSQL_URL);
 if (!process.env.MYSQL_URL) {
   throw new Error("❌ MYSQL_URL missing in .env or Railway variables!");
 }
-const db = mysql.createPool({
-  host: dbUrl.hostname,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace("/", ""),
-  port: dbUrl.port || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const mysql = require("mysql2/promise");
+
+const pool = mysql.createPool(process.env.MYSQL_URL);
 
 // Test connection
 (async () => {
   try {
-    const conn = await db.getConnection();
+    const conn = await pool.getConnection();
     await conn.query("SELECT 1");
     conn.release();
     console.log("✅ DB connected");
@@ -27,4 +20,4 @@ const db = mysql.createPool({
   }
 })();
 
-module.exports = db;
+module.exports = pool;
