@@ -1,18 +1,14 @@
-// app.js   
 const express = require("express");
-const cors = require("cors");
+console.log("🔥 APP.JS FILE LOADED 🔥");
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-
-// 🔥 ONLY HEALTH CHECK
 app.get("/", (req, res) => {
-  res.status(200).send("OK FROM RAILWAY");
+  res.send("OK");
 });
 
 module.exports = app;
+
 
 // const routeRoutes = require("./routes/routes");
 // const bookingRoutes = require("./routes/booking");
