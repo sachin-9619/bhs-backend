@@ -1,5 +1,7 @@
 const app = require("./app");
+const { initDB } = require("./db");
 
+initDB(); 
 // side effects AFTER load
 require("./db");
 require("./bookingReminderCron");
