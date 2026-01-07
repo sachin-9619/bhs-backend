@@ -1,21 +1,29 @@
-
-const dbUrl = new URL(process.env.MYSQL_URL);
 if (!process.env.MYSQL_URL) {
-  throw new Error("❌ MYSQL_URL missing in .env or Railway variables!");
+  throw new Error("❌ MYSQL_URL missing in Railway variables!");
 }
+
 const mysql = require("mysql2/promise");
 
-const pool = mysql.createPool(process.env.MYSQL_URL);
+// ✅ Railway MySQL FIX
+const pool = mysql.createPool({
+  uri: process.env.MYSQL_URL,
+  ssl: {
+    rejectUnauthorized: false
+  },
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-// Test connection
+// ✅ Test connection
 (async () => {
   try {
     const conn = await pool.getConnection();
     await conn.query("SELECT 1");
     conn.release();
-    console.log("✅ DB connected");
+    console.log("✅ DB connected successfully");
   } catch (err) {
-    console.error("❌ DB ERROR:", err.message);
+    console.error("❌ DB ERROR:", err);
   }
 })();
 
