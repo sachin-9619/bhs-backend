@@ -11,11 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 ROOT / HEALTH ROUTE (VERY IMPORTANT)
-app.get("/", (req, res) => {
-  res.status(200).send("🚀 BHS Backend is LIVE");
-});
-
 // ✅ API ROUTES
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
