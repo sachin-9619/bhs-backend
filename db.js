@@ -1,4 +1,3 @@
-const mysql = require("mysql2/promise");
 
 const dbUrl = new URL(process.env.MYSQL_URL);
 if (!process.env.MYSQL_URL) {
