@@ -1,21 +1,17 @@
 const mysql = require("mysql2/promise");
 
-const pool = mysql.createPool({
-  uri: process.env.MYSQL_URL,
-  waitForConnections: true,
-  connectionLimit: 10
-});
+const pool = mysql.createPool(process.env.MYSQL_URL);
 
-// Test connection
 (async () => {
   try {
     const conn = await pool.getConnection();
     await conn.query("SELECT 1");
     conn.release();
-    console.log("✅ DB connected successfully");
+    console.log("✅ DB connected");
   } catch (err) {
-    console.error("❌ DB ERROR:", err);
+    console.error("❌ DB ERROR:", err.message);
   }
 })();
 
 module.exports = pool;
+
