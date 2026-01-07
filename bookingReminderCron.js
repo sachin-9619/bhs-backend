@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const db = require("../db");
+const db = require("./db");
 const { sendBookingMail } = require("./mailer");
 
 cron.schedule("*/10 * * * *", async () => {
