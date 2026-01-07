@@ -5,10 +5,7 @@ if (!process.env.MYSQL_URL) {
   console.error("❌ MYSQL_URL missing in environment variables");
   process.exit(1);
 }
-app.get("/", (req, res) => {
-  if (!isReady) return res.status(503).send("⏳ Starting...");
-  res.status(200).send("🚀 BHS Backend is LIVE");
-});
+
 
 // 🔗 Pool via Railway MYSQL_URL
 const pool = mysql.createPool(process.env.MYSQL_URL);

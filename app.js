@@ -7,7 +7,10 @@ const contactRoutes = require("./routes/contact");
 const adminRoutes = require("./routes/admin");
 
 const app = express();
-
+app.get("/", (req, res) => {
+  if (!isReady) return res.status(503).send("⏳ Starting...");
+  res.status(200).send("🚀 BHS Backend is LIVE");
+});
 app.use(cors());
 app.use(express.json());
 
