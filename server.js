@@ -4,6 +4,10 @@ const { initDB } = require("./db");
 
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.status(200).send("BHS Backend is running 🚀");
+});
+
 // 🔥 AUTO INIT DB
 initDB();
 
