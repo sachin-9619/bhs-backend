@@ -1,6 +1,4 @@
 const express = require("express");
-console.log("🔥 APP.JS FILE LOADED 🔥");
-
 const app = express();
 
 app.get("/", (req, res) => {
@@ -8,6 +6,7 @@ app.get("/", (req, res) => {
 });
 
 module.exports = app;
+
 
 
 // const routeRoutes = require("./routes/routes");
