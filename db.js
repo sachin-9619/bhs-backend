@@ -1,21 +1,24 @@
-if (!process.env.MYSQL_URL) {
-  throw new Error("❌ MYSQL_URL missing in Railway variables!");
-}
-
 const mysql = require("mysql2/promise");
 
-// ✅ Railway MySQL FIX
+if (!process.env.MYSQL_URL) {
+  throw new Error("❌ MYSQL_URL missing");
+}
+
+// 🔥 FIX: Encode password safely
+const dbUrl = new URL(process.env.MYSQL_URL);
+
 const pool = mysql.createPool({
-  uri: process.env.MYSQL_URL,
+  host: dbUrl.hostname,
+  user: decodeURIComponent(dbUrl.username),
+  password: decodeURIComponent(dbUrl.password), // 🔥 MAIN FIX
+  database: dbUrl.pathname.replace("/", ""),
+  port: dbUrl.port,
   ssl: {
     rejectUnauthorized: false
-  },
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  }
 });
 
-// ✅ Test connection
+// Test connection
 (async () => {
   try {
     const conn = await pool.getConnection();
@@ -23,7 +26,7 @@ const pool = mysql.createPool({
     conn.release();
     console.log("✅ DB connected successfully");
   } catch (err) {
-    console.error("❌ DB ERROR:", err);
+    console.error("❌ DB ERROR:", err.message);
   }
 })();
 
