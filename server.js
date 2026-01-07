@@ -1,21 +1,18 @@
 const app = require("./app");
-const express = require("express");
 const { initDB } = require("./db");
 
-app.use(express.json());
-
-app.get("/", (req, res) => {
-  res.status(200).send("BHS Backend is running 🚀");
-});
-
-// 🔥 AUTO INIT DB
-initDB();
-
-app.get("/", (req, res) => {
-  res.send("Backend running + DB ready 🚀");
-});
+(async () => {
+  try {
+    await initDB();
+    console.log("✅ DB ready");
+  } catch (err) {
+    console.error("❌ DB init failed", err);
+  }
+})();
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log("🚀 listening");
+
+// 🔥 VERY IMPORTANT: 0.0.0.0
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 listening on", PORT);
 });
