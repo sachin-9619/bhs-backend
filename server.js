@@ -1,5 +1,4 @@
-// ✅ Correct order
-require("dotenv").config();   // <-- sabse top pe
+require("dotenv").config(); // sabse upar
 
 const app = require("./app");
 const { initDB } = require("./db");
@@ -10,12 +9,16 @@ const { initDB } = require("./db");
     console.log("✅ DB ready");
   } catch (err) {
     console.error("❌ DB init failed", err);
+    process.exit(1); // 🔥 important: fail fast
   }
 })();
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT; // ❗ NO fallback
 
-// 🔥 VERY IMPORTANT: 0.0.0.0
+if (!PORT) {
+  throw new Error("❌ PORT not provided by environment");
+}
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 listening on", PORT);
 });
