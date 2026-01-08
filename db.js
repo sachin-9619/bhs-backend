@@ -6,7 +6,6 @@ if (!process.env.MYSQL_URL) {
   process.exit(1);
 }
 
-
 // 🔗 Pool via Railway MYSQL_URL
 const pool = mysql.createPool(process.env.MYSQL_URL);
 
@@ -42,6 +41,25 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB
     `);
+
+    // ✅ Insert sample routes if not exist
+    const [existingRoutes] = await conn.query("SELECT COUNT(*) as count FROM routes");
+    if (existingRoutes[0].count === 0) {
+      await conn.query(`
+        INSERT INTO routes
+        (bus_name, bus_type, departure, destination, departure_time, arrival_time, duration, price, available_seats, created_at)
+        VALUES
+        ('Day rider', 'ac', 'Solapur', 'Pune', '08:00 AM', '01:00 PM', '5h', 500, 40, NOW()),
+        ('Morning Express', 'non-ac', 'Solapur', 'Pune', '06:00 AM', '11:30 AM', '5h 30m', 450, 30, NOW()),
+        ('Shivneri Deluxe', 'ac', 'Solapur', 'Pune', '02:00 PM', '07:00 PM', '5h', 550, 40, NOW()),
+        ('Midnight Sleeper', 'sleeper', 'Solapur', 'Pune', '11:30 PM', '05:00 AM', '5h 30m', 700, 35, NOW()),
+        ('Evening Rider', 'ac', 'Pune', 'Solapur', '03:00 PM', '08:00 PM', '5h', 500, 40, NOW()),
+        ('Early Morning Express', 'non-ac', 'Pune', 'Solapur', '05:30 AM', '11:00 AM', '5h 30m', 450, 30, NOW()),
+        ('Shivneri Return', 'ac', 'Pune', 'Solapur', '01:00 PM', '06:00 PM', '5h', 550, 40, NOW()),
+        ('Night Sleeper Return', 'sleeper', 'Pune', 'Solapur', '11:45 PM', '05:15 AM', '5h 30m', 700, 35, NOW())
+      `);
+      console.log("🎉 Sample routes added to routes table");
+    }
 
     // ================= ROUTE POINTS =================
     await conn.query(`
