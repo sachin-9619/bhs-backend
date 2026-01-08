@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const { pool } = require("../db");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken"); // if you want token generation
+const jwt = require("jsonwebtoken");
 
 // Admin Login
 router.post("/login", async (req, res) => {
@@ -11,7 +11,7 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ success: false, message: "Missing fields" });
 
   try {
-    const [rows] = await db.query("SELECT * FROM admins WHERE username=?", [username]);
+    const [rows] = await pool.execute("SELECT * FROM admins WHERE username=?", [username]);
     if (!rows.length)
       return res.status(401).json({ success: false, message: "Invalid credentials" });
 
@@ -20,7 +20,6 @@ router.post("/login", async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ success: false, message: "Invalid credentials" });
 
-    // Optional: generate JWT token
     const token = jwt.sign(
       { id: admin.id, username: admin.username },
       process.env.JWT_SECRET || "secretkey",
@@ -29,7 +28,7 @@ router.post("/login", async (req, res) => {
 
     res.json({ success: true, token });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Admin login error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
