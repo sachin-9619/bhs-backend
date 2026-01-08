@@ -15,15 +15,26 @@ async function initDB() {
     conn = await pool.getConnection();
     console.log("✅ DB connected via MYSQL_URL");
 
-    // ================= ADMINS =================
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS admins (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(100),
-        password VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB
-    `);
+   // ================= ADMINS =================
+await conn.query(`
+  CREATE TABLE IF NOT EXISTS admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100),
+    password VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB
+`);
+
+// ✅ Insert default admin if none exist
+const [existingAdmins] = await conn.query("SELECT COUNT(*) as count FROM admins");
+if (existingAdmins[0].count === 0) {
+  await conn.query(`
+    INSERT INTO admins (username, password, created_at)
+    VALUES ('Sachin', 'Sachin@4511', '2025-12-22 17:28:33')
+  `);
+  console.log("🎉 Default admin added: Sachin");
+}
+
 
     // ================= ROUTES =================
     await conn.query(`
@@ -61,17 +72,32 @@ async function initDB() {
       console.log("🎉 Sample routes added to routes table");
     }
 
-    // ================= ROUTE POINTS =================
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS route_points (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        route_id INT,
-        city VARCHAR(100),
-        time VARCHAR(20),
-        FOREIGN KEY (route_id) REFERENCES routes(id)
-          ON DELETE CASCADE
-      ) ENGINE=InnoDB
-    `);
+ // ================= ROUTE POINTS =================
+await conn.query(`
+  CREATE TABLE IF NOT EXISTS route_points (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    route_id INT,
+    city VARCHAR(100),
+    time VARCHAR(20),
+    FOREIGN KEY (route_id) REFERENCES routes(id)
+      ON DELETE CASCADE
+  ) ENGINE=InnoDB
+`);
+
+// ✅ Insert sample route points if none exist
+const [existingPoints] = await conn.query("SELECT COUNT(*) as count FROM route_points");
+if (existingPoints[0].count === 0) {
+  await conn.query(`
+    INSERT INTO route_points (route_id, city, time) VALUES
+    (1, 'Pandharpur', '09:30 AM'),
+    (1, 'Indapur', '11:00 AM'),
+    (2, 'Mohol', '07:00 AM'),
+    (2, 'Indapur', '09:30 AM'),
+    (3, 'Tembhurni', '03:30 PM'),
+    (3, 'Indapur', '05:00 PM')
+  `);
+  console.log("🎉 Sample route points added");
+}
 
     // ================= BOOKINGS =================
     await conn.query(`
