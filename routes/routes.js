@@ -1,12 +1,21 @@
+// routes/booking.js
 const express = require("express");
 const router = express.Router();
+const routeController = require("../controllers/routeController");
 
-const routesController = require("../controllers/routesController");
+// ================= BOOKED SEATS =================
+router.get("/:routeId/seats", routeController.getBookedSeats);
 
-// ✅ ROUTES APIs
-router.get("/", routesController.getAllRoutesForAdmin);
-router.post("/", routesController.addRoute);
-router.put("/:id", routesController.updateRoute);
-router.delete("/:id", routesController.deleteRoute);
+// ================= BOOK SEATS =================
+router.post("/:routeId", routeController.bookSeats);
+
+// ================= GET BOOKING BY ID =================
+router.get("/:id", routeController.getBookingById);
+
+// ================= ADMIN VIEW =================
+router.get("/", routeController.getAllBookingsForAdmin);
+
+// ================= DELETE =================
+router.delete("/:id", routeController.deleteBooking);
 
 module.exports = router;
