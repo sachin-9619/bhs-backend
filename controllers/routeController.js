@@ -1,4 +1,4 @@
-const db = require("../models/db");
+const db = require("../db");
 
 const fixTime = (t) => (t && t.length === 5 ? `${t}:00` : t);
 
