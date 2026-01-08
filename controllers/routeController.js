@@ -1,20 +1,16 @@
 const db = require("../db");
 
 const fixTime = (t) => (t && t.length === 5 ? `${t}:00` : t);
-
 exports.getAllRoutesForAdmin = async (req, res) => {
-  const conn = await db.getConnection();
   try {
-    const [rows] = await conn.execute(
+    const [rows] = await db.execute(
       `SELECT id, bus_name, departure, destination, available_seats, price
        FROM routes ORDER BY created_at DESC`
     );
     res.json(rows);
   } catch (err) {
-    console.error("Fetch routes error:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch routes" });
-  } finally {
-    conn.release();
   }
 };
 
