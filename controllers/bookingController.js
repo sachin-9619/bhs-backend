@@ -1,4 +1,5 @@
-const db = require("../db");        // DB pool
+// controllers/bookingController.js
+const { pool } = require("../db");
 const { sendBookingMail } = require("../mailer");
 
 // ================= GET BOOKED SEATS =================
@@ -7,7 +8,9 @@ exports.getBookedSeats = async (req, res) => {
     const { routeId } = req.params;
     const { date } = req.query;
 
-    const [rows] = await db.execute(
+    if (!date) return res.status(400).json({ message: "Date required" });
+
+    const [rows] = await pool.execute(
       "SELECT seat_number FROM bookings WHERE route_id=? AND travel_date=?",
       [routeId, date]
     );
@@ -31,7 +34,7 @@ exports.bookSeats = async (req, res) => {
 
     // Check already booked seats
     const placeholders = seats.map(() => "?").join(",");
-    const [existing] = await db.execute(
+    const [existing] = await pool.execute(
       `SELECT seat_number FROM bookings
        WHERE route_id=? AND travel_date=? AND seat_number IN (${placeholders})`,
       [routeId, travelDate, ...seats]
@@ -46,7 +49,7 @@ exports.bookSeats = async (req, res) => {
 
     // Insert bookings
     for (const seat of seats) {
-      await db.execute(
+      await pool.execute(
         `INSERT INTO bookings
          (route_id, seat_number, user_name, phone, amount, travel_date, status, email)
          VALUES (?, ?, ?, ?, ?, ?, 'CONFIRMED', ?)`,
@@ -55,7 +58,7 @@ exports.bookSeats = async (req, res) => {
     }
 
     // Get route info
-    const [[route]] = await db.execute(
+    const [[route]] = await pool.execute(
       `SELECT bus_name AS busName, departure, destination,
               departure_time AS departureTime
        FROM routes WHERE id=?`,
@@ -66,10 +69,10 @@ exports.bookSeats = async (req, res) => {
       userName,
       email,
       phone,
-      busName: route.busName,
-      departure: route.departure,
-      destination: route.destination,
-      departureTime: route.departureTime,
+      busName: route?.busName || "",
+      departure: route?.departure || "",
+      destination: route?.destination || "",
+      departureTime: route?.departureTime || "",
       seats: seats.join(", "),
       amount,
     };
@@ -95,7 +98,7 @@ exports.bookSeats = async (req, res) => {
 exports.getBookingById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute(
+    const [rows] = await pool.execute(
       "SELECT * FROM bookings WHERE id=?",
       [id]
     );
@@ -112,7 +115,7 @@ exports.getBookingById = async (req, res) => {
 // ================= ADMIN VIEW =================
 exports.getAllBookingsForAdmin = async (req, res) => {
   try {
-    const [rows] = await db.execute(
+    const [rows] = await pool.execute(
       `SELECT b.id, b.user_name, b.seat_number AS seats, b.amount,
               DATE_FORMAT(b.travel_date,'%d-%m-%Y') AS date,
               CONCAT(r.departure,' → ',r.destination) AS route
@@ -132,7 +135,7 @@ exports.getAllBookingsForAdmin = async (req, res) => {
 exports.deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.execute(
+    const [result] = await pool.execute(
       "DELETE FROM bookings WHERE id=?",
       [id]
     );

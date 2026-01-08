@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 const mysql = require("mysql2/promise");
 
-// ✅ DB POOL
-const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "Sachin@4511",
-  database: "bhstravels",
-});
+/* ================================
+   ✅ DB POOL (Railway compatible)
+================================ */
+const pool = mysql.createPool(process.env.MYSQL_URL);
 
 /* ================================
    📩 SAVE CONTACT MESSAGE
@@ -36,30 +33,13 @@ router.post("/", async (req, res) => {
       message: "Message saved successfully",
     });
   } catch (err) {
-    console.error(err);
+    console.error("CONTACT DB ERROR:", err);
     res.status(500).json({
       success: false,
       message: "Database error",
     });
   }
 });
-// ================================
-// DELETE CONTACT MESSAGE (ADMIN)
-// ================================
-router.delete("/:id", async (req, res) => {
-  try {
-    await pool.execute(
-      "DELETE FROM contacts WHERE id=?",
-      [req.params.id]
-    );
-
-    res.json({ success: true, message: "Message deleted" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
-  }
-});
-
 
 /* ================================
    🧑‍💻 ADMIN – GET ALL MESSAGES
@@ -67,26 +47,27 @@ router.delete("/:id", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT 
-        id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        subject,
-        message,
-        created_at
+      `SELECT id, first_name, last_name, email, phone, subject, message, created_at
        FROM contacts
        ORDER BY created_at DESC`
     );
-
     res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch messages",
-    });
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ================================
+   🗑️ DELETE MESSAGE
+================================ */
+router.delete("/:id", async (req, res) => {
+  try {
+    await pool.execute("DELETE FROM contacts WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
   }
 });
 
