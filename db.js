@@ -31,10 +31,10 @@ async function initDB() {
       const hashedPassword = await bcrypt.hash("sachin4511", 10);
       await conn.query(
         `INSERT INTO admins (username, password, created_at)
-         VALUES ('Sachin', ?, NOW())`,
+         VALUES ('sachin', ?, NOW())`,
         [hashedPassword]
       );
-      console.log("🎉 Default admin added: Sachin (hashed password)");
+      console.log("🎉 Default admin added: sachin (hashed password)");
     }
 
     // ================= ROUTES =================
