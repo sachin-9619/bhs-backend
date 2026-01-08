@@ -3,19 +3,18 @@ const app = require("./app");
 const { initDB } = require("./db");
 
 const PORT = process.env.PORT || 5000;
-if (!PORT) throw new Error("PORT not set");
 
-// 🚀 START SERVER FIRST (VERY IMPORTANT)
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 listening on", PORT);
-});
-
-// 🔁 INIT DB IN BACKGROUND
 (async () => {
   try {
     await initDB();
     console.log("✅ DB ready");
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
   } catch (err) {
     console.error("❌ DB init failed", err);
+    process.exit(1);
   }
 })();
