@@ -9,22 +9,34 @@ router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username || !password)
-      return res.status(400).json({ message: "All fields required" });
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Username and password required"
+      });
+    }
 
     const [rows] = await pool.query(
       "SELECT * FROM admins WHERE username = ?",
       [username]
     );
 
-    if (rows.length === 0)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
 
     const admin = rows[0];
 
     const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
 
     const token = jwt.sign(
       { id: admin.id, username: admin.username },
@@ -33,13 +45,15 @@ router.post("/login", async (req, res) => {
     );
 
     res.json({
-      message: "Login successful",
-      token,
-      admin: { id: admin.id, username: admin.username }
+      success: true,
+      token
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ ADMIN LOGIN ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 });
 
