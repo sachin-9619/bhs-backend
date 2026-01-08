@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const routesController = require("../controllers/routesController");
+const routesController = require("../controllers/routeController");
 
 // ✅ ROUTES APIs
 router.get("/", routesController.getAllRoutesForAdmin);
