@@ -28,7 +28,7 @@ async function initDB() {
     // ✅ Insert default admin with hashed password
     const [existingAdmins] = await conn.query("SELECT COUNT(*) as count FROM admins");
     if (existingAdmins[0].count === 0) {
-      const hashedPassword = await bcrypt.hash("Sachin@4511", 10);
+      const hashedPassword = await bcrypt.hash("sachin4511", 10);
       await conn.query(`
         INSERT INTO admins (username, password, created_at)
         VALUES ('Sachin', ?, '2025-12-22 17:28:33')
