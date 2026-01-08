@@ -1,4 +1,5 @@
 const mysql = require("mysql2/promise");
+const bcrypt = require("bcrypt");
 
 // 🔐 Safety check
 if (!process.env.MYSQL_URL) {

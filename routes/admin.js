@@ -11,11 +11,16 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ success: false, message: "Missing fields" });
 
   try {
-    const [rows] = await pool.execute("SELECT * FROM admins WHERE username=?", [username]);
+    // Ensure username lowercase match
+    const [rows] = await pool.query("SELECT * FROM admins WHERE LOWER(username)=?", [
+      username.toLowerCase(),
+    ]);
+
     if (!rows.length)
       return res.status(401).json({ success: false, message: "Invalid credentials" });
 
     const admin = rows[0];
+
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch)
       return res.status(401).json({ success: false, message: "Invalid credentials" });
@@ -28,7 +33,7 @@ router.post("/login", async (req, res) => {
 
     res.json({ success: true, token });
   } catch (err) {
-    console.error("❌ Admin login error:", err);
+    console.error("❌ Admin login failed:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
