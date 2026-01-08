@@ -15,25 +15,26 @@ async function initDB() {
     conn = await pool.getConnection();
     console.log("✅ DB connected via MYSQL_URL");
 
-   // ================= ADMINS =================
-await conn.query(`
-  CREATE TABLE IF NOT EXISTS admins (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100),
-    password VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  ) ENGINE=InnoDB
-`);
+// ================= ADMINS =================
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(100),
+        password VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
 
-// ✅ Insert default admin if none exist
-const [existingAdmins] = await conn.query("SELECT COUNT(*) as count FROM admins");
-if (existingAdmins[0].count === 0) {
-  await conn.query(`
-    INSERT INTO admins (username, password, created_at)
-    VALUES ('Sachin', 'Sachin@4511', '2025-12-22 17:28:33')
-  `);
-  console.log("🎉 Default admin added: Sachin");
-}
+    // ✅ Insert default admin with hashed password
+    const [existingAdmins] = await conn.query("SELECT COUNT(*) as count FROM admins");
+    if (existingAdmins[0].count === 0) {
+      const hashedPassword = await bcrypt.hash("Sachin@4511", 10);
+      await conn.query(`
+        INSERT INTO admins (username, password, created_at)
+        VALUES ('Sachin', ?, '2025-12-22 17:28:33')
+      `, [hashedPassword]);
+      console.log("🎉 Default admin added: Sachin (hashed password)");
+    }
 
 
     // ================= ROUTES =================
