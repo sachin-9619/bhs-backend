@@ -1,23 +1,26 @@
-const db = require("../db");
+// controllers/routeController.js
+const { pool } = require("../db");
 
+// Helper to fix time format
 const fixTime = (t) => (t && t.length === 5 ? `${t}:00` : t);
+
+// ================= GET ALL ROUTES (ADMIN) =================
 exports.getAllRoutesForAdmin = async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      `SELECT id, bus_name, departure, destination, available_seats, price
+    const [rows] = await pool.execute(
+      `SELECT id, bus_name, bus_type, departure, destination, departure_time, arrival_time, available_seats, price
        FROM routes ORDER BY created_at DESC`
     );
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("Fetch routes error:", err);
     res.status(500).json({ message: "Failed to fetch routes" });
   }
 };
 
-
-// ADD ROUTE
+// ================= ADD ROUTE =================
 exports.addRoute = async (req, res) => {
-  const conn = await db.getConnection();
+  const conn = await pool.getConnection();
   try {
     const {
       busName,
@@ -35,8 +38,7 @@ exports.addRoute = async (req, res) => {
 
     const [result] = await conn.execute(
       `INSERT INTO routes
-       (bus_name, bus_type, departure, destination,
-        departure_time, arrival_time, available_seats, price)
+        (bus_name, bus_type, departure, destination, departure_time, arrival_time, available_seats, price)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         busName,
@@ -52,6 +54,7 @@ exports.addRoute = async (req, res) => {
 
     const routeId = result.insertId;
 
+    // Insert route points if provided
     if (stops) {
       const cities = stops.split(",");
       for (const city of cities) {
@@ -66,16 +69,16 @@ exports.addRoute = async (req, res) => {
     res.status(201).json({ success: true, routeId });
   } catch (err) {
     await conn.rollback();
-    console.error(err);
+    console.error("Add route error:", err);
     res.status(500).json({ message: "Failed to add route" });
   } finally {
     conn.release();
   }
 };
 
-// UPDATE ROUTE
+// ================= UPDATE ROUTE =================
 exports.updateRoute = async (req, res) => {
-  const conn = await db.getConnection();
+  const conn = await pool.getConnection();
   try {
     const { id } = req.params;
     const {
@@ -87,10 +90,12 @@ exports.updateRoute = async (req, res) => {
       arrivalTime,
       availableSeats,
       price,
+      stops,
     } = req.body;
 
     await conn.beginTransaction();
 
+    // Update main route
     await conn.execute(
       `UPDATE routes SET
         bus_name=?, bus_type=?, departure=?, destination=?,
@@ -109,32 +114,50 @@ exports.updateRoute = async (req, res) => {
       ]
     );
 
+    // Update route points if provided
+    if (stops) {
+      // Delete existing points
+      await conn.execute("DELETE FROM route_points WHERE route_id=?", [id]);
+
+      const cities = stops.split(",");
+      for (const city of cities) {
+        await conn.execute(
+          "INSERT INTO route_points (route_id, city) VALUES (?, ?)",
+          [id, city.trim()]
+        );
+      }
+    }
+
     await conn.commit();
     res.json({ success: true });
   } catch (err) {
     await conn.rollback();
-    console.error(err);
+    console.error("Update route error:", err);
     res.status(500).json({ message: "Failed to update route" });
   } finally {
     conn.release();
   }
 };
 
-// DELETE ROUTE
+// ================= DELETE ROUTE =================
 exports.deleteRoute = async (req, res) => {
-  const conn = await db.getConnection();
+  const conn = await pool.getConnection();
   try {
     const { id } = req.params;
 
     await conn.beginTransaction();
-    await conn.execute("DELETE FROM route_points WHERE route_id=?", [id]);
-    await conn.execute("DELETE FROM routes WHERE id=?", [id]);
-    await conn.commit();
 
+    // Delete route points first (FK CASCADE ensures safety)
+    await conn.execute("DELETE FROM route_points WHERE route_id=?", [id]);
+
+    // Delete route
+    await conn.execute("DELETE FROM routes WHERE id=?", [id]);
+
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
     await conn.rollback();
-    console.error(err);
+    console.error("Delete route error:", err);
     res.status(500).json({ message: "Failed to delete route" });
   } finally {
     conn.release();
