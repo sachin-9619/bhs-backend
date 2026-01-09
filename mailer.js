@@ -8,7 +8,7 @@ function getTransporter() {
   transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
     port: Number(process.env.MAIL_PORT),
-    secure: true,
+    secure: false,
     auth: {
       user: "9fa352001@smtp-brevo.com",
       pass: "qWBYAN0QM723bl1j",
