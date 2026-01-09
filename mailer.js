@@ -31,7 +31,7 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
     subject = "🎫 Bus Ticket Confirmation - BHS Travels";
     html = `
       <h2>Booking Confirmed 🎉</h2>
-      <p><b>Name:</b> ${data.user_name}</p>
+      <p><b>Name:</b> ${data.userName}</p>
       <p><b>Bus:</b> ${data.busName}</p>
       <p><b>From:</b> ${data.departure}</p>
       <p><b>To:</b> ${data.destination}</p>
