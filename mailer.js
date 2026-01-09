@@ -1,21 +1,21 @@
 const nodemailer = require("nodemailer");
 
-let transporter; // 🔥 lazy init
+let transporter;
 
 function getTransporter() {
   if (transporter) return transporter;
 
   transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
+    host: process.env.MAIL_HOST,
+    port: Number(process.env.MAIL_PORT),
+    secure: false, // 587 = TLS
     auth: {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
     },
-    connectionTimeout: 7000,
-    greetingTimeout: 7000,
-    socketTimeout: 7000,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
   });
 
   return transporter;
@@ -35,6 +35,7 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
       <p><b>Bus:</b> ${data.busName}</p>
       <p><b>From:</b> ${data.departure}</p>
       <p><b>To:</b> ${data.destination}</p>
+      <p><b>Seats:</b> ${data.seats}</p>
       <p><b>Amount:</b> ₹${data.amount}</p>
       <p><b>Departure Time:</b> ${data.departureTime}</p>
       <br/>
@@ -46,11 +47,12 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
     subject = "🆕 New Booking Received - BHS";
     html = `
       <h2>New Booking Alert</h2>
-      <p><b>Customer:</b> ${data.user_name}</p>
+      <p><b>Customer:</b> ${data.userName}</p>
       <p><b>Email:</b> ${data.email}</p>
       <p><b>Phone:</b> ${data.phone}</p>
       <p><b>Bus:</b> ${data.busName}</p>
       <p><b>Route:</b> ${data.departure} → ${data.destination}</p>
+      <p><b>Seats:</b> ${data.seats}</p>
       <p><b>Amount:</b> ₹${data.amount}</p>
     `;
   }
@@ -58,21 +60,15 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   try {
     const mailer = getTransporter();
 
-    await Promise.race([
-      mailer.sendMail({
-        from: `"BHS Travels" <${process.env.MAIL_USER}>`,
-        to,
-        subject,
-        html,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("SMTP timeout")), 8000)
-      ),
-    ]);
+    await mailer.sendMail({
+      from: `"BHS Travels" <${process.env.ADMIN_EMAIL}>`,
+      to,
+      subject,
+      html,
+    });
 
     console.log(`✅ Mail sent → ${to} [${type}]`);
   } catch (err) {
-    console.error("❌ Mail skipped:", err.message);
-    // 🔥 NEVER throw
+    console.error("❌ Mail failed:", err.message);
   }
 };
