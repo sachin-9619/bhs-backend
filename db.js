@@ -1,146 +1,138 @@
-const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 
-// 🔐 Safety check
-if (!process.env.MYSQL_URL) {
-  console.error("❌ MYSQL_URL missing in environment variables");
+if (!process.env.DATABASE_URL) {
+  console.error("❌ DATABASE_URL missing");
   process.exit(1);
 }
 
-// 🔗 Pool via Railway MYSQL_URL
-const pool = mysql.createPool(process.env.MYSQL_URL);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 async function initDB() {
-  let conn;
+  const client = await pool.connect();
   try {
-    conn = await pool.getConnection();
-    console.log("✅ DB connected via MYSQL_URL");
+    console.log("✅ Postgres connected");
 
-   // ADMINS TABLE
-  await conn.query(`
-    CREATE TABLE IF NOT EXISTS admins (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(100) UNIQUE,
-      password VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    /* ================= ADMINS ================= */
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
+        password TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-  // Insert admin if not exists
-  const [rows] = await conn.query(
-    "SELECT * FROM admins WHERE username = 'sachin'"
-  );
-
-  if (rows.length === 0) {
-    const hashed = await bcrypt.hash("sachin4511", 10);
-    await conn.query(
-      "INSERT INTO admins (username, password) VALUES (?, ?)",
-      ["sachin", hashed]
+    const admin = await client.query(
+      "SELECT * FROM admins WHERE username=$1",
+      ["sachin"]
     );
-    console.log("✅ Admin created: sachin / sachin4511");
-  }
 
-    // ================= ROUTES =================
-    await conn.query(`
+    if (admin.rows.length === 0) {
+      const hash = await bcrypt.hash("sachin4511", 10);
+      await client.query(
+        "INSERT INTO admins (username, password) VALUES ($1,$2)",
+        ["sachin", hash]
+      );
+      console.log("✅ Admin created");
+    }
+
+    /* ================= ROUTES ================= */
+    await client.query(`
       CREATE TABLE IF NOT EXISTS routes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        bus_name VARCHAR(100),
-        bus_type VARCHAR(50),
-        departure VARCHAR(100),
-        destination VARCHAR(100),
-        departure_time VARCHAR(20),
-        arrival_time VARCHAR(20),
-        duration VARCHAR(20),
+        id SERIAL PRIMARY KEY,
+        bus_name TEXT,
+        bus_type TEXT,
+        departure TEXT,
+        destination TEXT,
+        departure_time TEXT,
+        arrival_time TEXT,
+        duration TEXT,
         price INT,
         available_seats INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB
+      )
     `);
 
-    // ✅ Insert sample routes if not exist
-    const [existingRoutes] = await conn.query("SELECT COUNT(*) as count FROM routes");
-    if (existingRoutes[0].count === 0) {
-      await conn.query(`
+    const routeCount = await client.query("SELECT COUNT(*) FROM routes");
+    if (routeCount.rows[0].count === "0") {
+      await client.query(`
         INSERT INTO routes
-        (bus_name, bus_type, departure, destination, departure_time, arrival_time, duration, price, available_seats, created_at)
+        (bus_name, bus_type, departure, destination, departure_time, arrival_time, duration, price, available_seats)
         VALUES
-        ('Day rider', 'ac', 'Solapur', 'Pune', '08:00 AM', '01:00 PM', '5h', 500, 40, NOW()),
-        ('Morning Express', 'non-ac', 'Solapur', 'Pune', '06:00 AM', '11:30 AM', '5h 30m', 450, 30, NOW()),
-        ('Shivneri Deluxe', 'ac', 'Solapur', 'Pune', '02:00 PM', '07:00 PM', '5h', 550, 40, NOW()),
-        ('Midnight Sleeper', 'sleeper', 'Solapur', 'Pune', '11:30 PM', '05:00 AM', '5h 30m', 700, 35, NOW()),
-        ('Evening Rider', 'ac', 'Pune', 'Solapur', '03:00 PM', '08:00 PM', '5h', 500, 40, NOW()),
-        ('Early Morning Express', 'non-ac', 'Pune', 'Solapur', '05:30 AM', '11:00 AM', '5h 30m', 450, 30, NOW()),
-        ('Shivneri Return', 'ac', 'Pune', 'Solapur', '01:00 PM', '06:00 PM', '5h', 550, 40, NOW()),
-        ('Night Sleeper Return', 'sleeper', 'Pune', 'Solapur', '11:45 PM', '05:15 AM', '5h 30m', 700, 35, NOW())
+        ('Day Rider','AC','Solapur','Pune','08:00','13:00','5h',500,40),
+        ('Morning Express','Non-AC','Solapur','Pune','06:00','11:30','5h30m',450,30),
+        ('Shivneri Deluxe','AC','Solapur','Pune','14:00','19:00','5h',550,40),
+        ('Night Sleeper','Sleeper','Solapur','Pune','23:30','05:00','5h30m',700,35),
+        ('Evening Rider','AC','Pune','Solapur','15:00','20:00','5h',500,40),
+        ('Early Morning','Non-AC','Pune','Solapur','05:30','11:00','5h30m',450,30)
       `);
-      console.log("🎉 Sample routes added to routes table");
+      console.log("🎉 Routes inserted");
     }
 
- // ================= ROUTE POINTS =================
-await conn.query(`
-  CREATE TABLE IF NOT EXISTS route_points (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    route_id INT,
-    city VARCHAR(100),
-    time VARCHAR(20),
-    FOREIGN KEY (route_id) REFERENCES routes(id)
-      ON DELETE CASCADE
-  ) ENGINE=InnoDB
-`);
-
-// ✅ Insert sample route points if none exist
-const [existingPoints] = await conn.query("SELECT COUNT(*) as count FROM route_points");
-if (existingPoints[0].count === 0) {
-  await conn.query(`
-    INSERT INTO route_points (route_id, city, time) VALUES
-    (1, 'Pandharpur', '09:30 AM'),
-    (1, 'Indapur', '11:00 AM'),
-    (2, 'Mohol', '07:00 AM'),
-    (2, 'Indapur', '09:30 AM'),
-    (3, 'Tembhurni', '03:30 PM'),
-    (3, 'Indapur', '05:00 PM')
-  `);
-  console.log("🎉 Sample route points added");
-}
-
-    // ================= BOOKINGS =================
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        route_id INT,
-        seat_number INT,
-        user_name VARCHAR(100),
-        phone VARCHAR(20),
-        amount INT,
-        status VARCHAR(30),
-        travel_date DATE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        email VARCHAR(100),
-        FOREIGN KEY (route_id) REFERENCES routes(id)
-          ON DELETE CASCADE
-      ) ENGINE=InnoDB
+    /* ================= ROUTE POINTS ================= */
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS route_points (
+        id SERIAL PRIMARY KEY,
+        route_id INT REFERENCES routes(id) ON DELETE CASCADE,
+        city TEXT,
+        time TEXT
+      )
     `);
 
-    // ================= CONTACTS =================
-    await conn.query(`
+    const pointCount = await client.query("SELECT COUNT(*) FROM route_points");
+    if (pointCount.rows[0].count === "0") {
+      await client.query(`
+        INSERT INTO route_points (route_id, city, time) VALUES
+        (1,'Pandharpur','09:30'),
+        (1,'Indapur','11:00'),
+        (2,'Mohol','07:00'),
+        (2,'Indapur','09:30'),
+        (3,'Tembhurni','15:30'),
+        (3,'Indapur','17:00')
+      `);
+      console.log("🎉 Route points inserted");
+    }
+
+    /* ================= BOOKINGS ================= */
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        route_id INT REFERENCES routes(id) ON DELETE CASCADE,
+        seat_number INT,
+        user_name TEXT,
+        phone TEXT,
+        email TEXT,
+        amount INT,
+        status TEXT,
+        travel_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    /* ================= CONTACTS ================= */
+    await client.query(`
       CREATE TABLE IF NOT EXISTS contacts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        first_name VARCHAR(100),
-        last_name VARCHAR(100),
-        email VARCHAR(100),
-        phone VARCHAR(20),
-        subject VARCHAR(100),
+        id SERIAL PRIMARY KEY,
+        first_name TEXT,
+        last_name TEXT,
+        email TEXT,
+        phone TEXT,
+        subject TEXT,
         message TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB
+      )
     `);
 
-    console.log("🎉 All tables created / verified successfully");
+    console.log("🎉 ALL TABLES + ALL DATA READY");
 
   } catch (err) {
     console.error("❌ DB init failed:", err);
   } finally {
-    if (conn) conn.release();
+    client.release();
   }
 }
 
