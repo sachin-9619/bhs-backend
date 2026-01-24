@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("./cron/cleanupBookings"); // 🔥 AUTO CLEANUP ENABLED
 const app = require("./app");
 const { initDB } = require("./db");
 
