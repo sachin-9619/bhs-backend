@@ -1,19 +1,26 @@
 const axios = require("axios");
 
+/**
+ * SEND BOOKING MAIL
+ * @param {string} to - receiver email
+ * @param {object} data - booking data
+ * @param {string} type - CONFIRMATION | ADMIN_NOTIFICATION
+ */
 exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   if (!to) return;
 
   let subject = "";
   let html = "";
 
+  // ===== USER CONFIRMATION =====
   if (type === "CONFIRMATION") {
     subject = "🎫 Bus Ticket Confirmed | BHS Travels";
     html = `
-      <div style="font-family:Arial,sans-serif">
+      <div style="font-family:Arial,sans-serif;max-width:600px">
         <h2 style="color:#0a7cff">Booking Confirmed 🎉</h2>
         <p>Hello <b>${data.userName}</b>,</p>
 
-        <table cellpadding="6">
+        <table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse">
           <tr><td><b>Bus</b></td><td>${data.busName}</td></tr>
           <tr><td><b>Route</b></td><td>${data.departure} → ${data.destination}</td></tr>
           <tr><td><b>Date</b></td><td>${data.travelDate}</td></tr>
@@ -22,13 +29,16 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
           <tr><td><b>Amount</b></td><td>₹${data.amount}</td></tr>
         </table>
 
-        <p>🙏 Thank you for choosing <b>BHS Travels</b></p>
+        <p style="margin-top:15px">
+          🙏 Thank you for choosing <b>BHS Travels</b>
+        </p>
       </div>
     `;
   }
 
+  // ===== ADMIN NOTIFICATION =====
   if (type === "ADMIN_NOTIFICATION") {
-    subject = "🆕 New Booking Received | BHS";
+    subject = "🆕 New Booking Received | BHS Travels";
     html = `
       <div style="font-family:Arial,sans-serif">
         <h2>New Booking Alert 🚨</h2>
@@ -47,8 +57,8 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
       "https://api.brevo.com/v3/smtp/email",
       {
         sender: {
-          email: process.env.MAIL_FROM,
           name: "BHS Travels",
+          email: process.env.MAIL_FROM,
         },
         to: [{ email: to }],
         subject,
@@ -59,11 +69,15 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
           "api-key": process.env.BREVO_API_KEY,
           "Content-Type": "application/json",
         },
+        timeout: 20000,
       }
     );
 
     console.log(`✅ Mail sent → ${to} [${type}]`);
   } catch (err) {
-    console.error("❌ Mail error:", err.response?.data || err.message);
+    console.error(
+      "❌ Mail error:",
+      err.response?.data || err.message
+    );
   }
 };
