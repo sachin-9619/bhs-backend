@@ -1,33 +1,11 @@
-const nodemailer = require("nodemailer");
+const axios = require("axios");
 
-let transporter;
-
-function getTransporter() {
-  if (transporter) return transporter;
-
-  transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 465,              // ✅ CHANGE
-    secure: true,           // ✅ REQUIRED for 465
-    auth: {
-      user: "apikey",       // 🔥 Brevo rule
-      pass: process.env.SMTP_PASS, // xsmtpsib-xxxx
-    },
-    connectionTimeout: 20000,
-    socketTimeout: 20000,
-  });
-
-  return transporter;
-}
-
-// ================= SEND MAIL =================
 exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   if (!to) return;
 
   let subject = "";
   let html = "";
 
-  // ===== USER CONFIRMATION =====
   if (type === "CONFIRMATION") {
     subject = "🎫 Bus Ticket Confirmed | BHS Travels";
     html = `
@@ -49,7 +27,6 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
     `;
   }
 
-  // ===== ADMIN NOTIFICATION =====
   if (type === "ADMIN_NOTIFICATION") {
     subject = "🆕 New Booking Received | BHS";
     html = `
@@ -66,18 +43,27 @@ exports.sendBookingMail = async (to, data, type = "CONFIRMATION") => {
   }
 
   try {
-    const mailer = getTransporter();
-
-    // ❌ verify() REMOVE (Render pe timeout deta hai)
-    await mailer.sendMail({
-      from: `"BHS Travels" <${process.env.MAIL_FROM}>`,
-      to,
-      subject,
-      html,
-    });
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          email: process.env.MAIL_FROM,
+          name: "BHS Travels",
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     console.log(`✅ Mail sent → ${to} [${type}]`);
   } catch (err) {
-    console.error("❌ Mail failed:", err.message);
+    console.error("❌ Mail error:", err.response?.data || err.message);
   }
 };
